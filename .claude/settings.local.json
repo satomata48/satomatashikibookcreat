@@ -50,7 +50,14 @@
       "Bash(npm run check:*)",
       "Bash(git add:*)",
       "Bash(git init:*)",
-      "Bash(git remote add:*)"
+      "Bash(git remote add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git remote remove:*)",
+      "Bash(git remote:*)",
+      "Bash(gh:*)"
     ],
     "deny": [],
     "ask": []
