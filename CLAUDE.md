@@ -363,6 +363,80 @@ npm run preview
 ### スタイリング問題
 - CSS変数が効かない → `app.css`のインポート順序確認
 
+## Vercel本番デプロイ設定
+
+### 本番環境URL
+```
+https://satomatashikibookcreat-ui8v.vercel.app
+```
+
+### GitHub Repository
+```
+https://github.com/satomata48/satomatashikibookcreat
+```
+
+### Vercelデプロイ設定
+
+#### Framework設定
+- **Framework**: SvelteKit
+- **Build Command**: `npm run build`
+- **Output Directory**: `build`
+- **Install Command**: `npm install`
+
+#### 環境変数設定
+```bash
+PUBLIC_SUPABASE_URL=https://xyljoaeswvxyfyhtygzs.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5bGpvYWVzd3Z4eWZ5aHR5Z3pzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzMxNjYsImV4cCI6MjA3MjU0OTE2Nn0.CkHuJzDJweb66jd4n2A3vInrGSdNYfOQNV8iRuc6GIs
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5bGpvYWVzd3Z4eWZ5aHR5Z3pzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Njk3MzE2NiwiZXhwIjoyMDcyNTQ5MTY2fQ.6j0uDfdYIVvRAjIsKFjZ2ASJ4e4Ozu3ZdLyH7lSaaj8
+```
+
+### Supabase本番設定
+
+#### Authentication設定
+```
+Site URL: https://satomatashikibookcreat-ui8v.vercel.app
+Redirect URLs: https://satomatashikibookcreat-ui8v.vercel.app/auth/callback
+```
+
+#### プロジェクトID
+```
+Project ID: xyljoaeswvxyfyhtygzs
+```
+
+### デプロイメント履歴
+
+#### 主要コミット履歴
+- `b0b4c92`: 認証リダイレクトURL修正（本番環境対応）
+- `601a2a4`: SvelteKit環境変数処理修正（`$env/static/public`使用）
+- `0b1c35d`: 環境変数名修正（`PUBLIC_*`対応）
+
+#### A4プレビュー機能実装
+- ページ区切り表示機能
+- Satomataテンプレート強化
+- 章区切りページブレーク機能
+
+### トラブルシューティング
+
+#### 認証エラー解決済み
+```javascript
+// 修正前（エラー原因）
+emailRedirectTo: `${window.location.origin}/auth/callback`
+
+// 修正後（本番環境対応）
+emailRedirectTo: `https://satomatashikibookcreat-ui8v.vercel.app/auth/callback`
+```
+
+#### 環境変数処理修正済み
+```typescript
+// SvelteKit用環境変数読み込み
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+```
+
+### 自動デプロイ設定
+- GitHubプッシュ → Vercel自動デプロイ
+- mainブランチ監視
+- Personal Access Token認証設定済み
+
 ## 今後の拡張可能性
 
 - カバー画像アップロード機能
@@ -372,5 +446,17 @@ npm run preview
 - 出版プラットフォーム連携
 
 ---
+
+## クイックアクセス
+
+### 開発環境起動
+```bash
+npm run dev
+```
+
+### デプロイ確認
+- 本番環境: https://satomatashikibookcreat-ui8v.vercel.app
+- Vercel Dashboard: https://vercel.com/dashboard
+- GitHub Repository: https://github.com/satomata48/satomatashikibookcreat
 
 このドキュメントを参照することで、プロジェクトの完全な復元と理解が可能です。
