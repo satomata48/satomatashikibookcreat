@@ -2,25 +2,42 @@ import { createBrowserClient, createServerClient, isBrowser } from '@supabase/ss
 import type { Database } from './types/database';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
-const supabaseUrl = PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = PUBLIC_SUPABASE_ANON_KEY;
+// 環境変数を取得し、空白文字を除去
+const supabaseUrl = PUBLIC_SUPABASE_URL?.trim();
+const supabaseAnonKey = PUBLIC_SUPABASE_ANON_KEY?.trim();
 
-// デバッグログ（本番環境でも一時的に表示）
+// デバッグログ（詳細な文字検査を含む）
 console.log('Environment check:');
+console.log('URL raw length:', PUBLIC_SUPABASE_URL?.length || 0);
+console.log('URL after trim:', supabaseUrl?.length || 0);
 console.log('URL:', supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING');
+console.log('URL contains spaces:', PUBLIC_SUPABASE_URL ? /\s/.test(PUBLIC_SUPABASE_URL) : false);
+
+console.log('Key raw length:', PUBLIC_SUPABASE_ANON_KEY?.length || 0);
+console.log('Key after trim:', supabaseAnonKey?.length || 0);
 console.log('Key:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 30)}...` : 'MISSING');
+console.log('Key contains spaces:', PUBLIC_SUPABASE_ANON_KEY ? /\s/.test(PUBLIC_SUPABASE_ANON_KEY) : false);
 
 if (!supabaseUrl || !supabaseAnonKey) {
 	throw new Error('Missing Supabase environment variables');
 }
 
-// URL形式の検証
+// より詳細な検証
 if (!supabaseUrl.startsWith('https://')) {
 	throw new Error(`Invalid Supabase URL format: ${supabaseUrl}`);
 }
 
 if (!supabaseAnonKey.startsWith('eyJ')) {
 	throw new Error(`Invalid Supabase key format: ${supabaseAnonKey.substring(0, 10)}...`);
+}
+
+// 非表示文字のチェック
+if (/[\r\n\t]/.test(supabaseUrl)) {
+	throw new Error('Supabase URL contains invalid characters (newlines/tabs)');
+}
+
+if (/[\r\n\t]/.test(supabaseAnonKey)) {
+	throw new Error('Supabase key contains invalid characters (newlines/tabs)');
 }
 
 export const createClient = (event?: { cookies: any; request?: Request }) => {
