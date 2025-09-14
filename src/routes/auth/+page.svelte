@@ -43,6 +43,12 @@
 		
 		try {
 			if (isLogin) {
+				console.warn('=== LOGIN ATTEMPT DEBUG ===');
+				console.warn('Email:', email);
+				console.warn('Password length:', password.length);
+				console.warn('Supabase client exists:', !!data.supabase);
+				console.warn('Auth method exists:', !!data.supabase.auth.signInWithPassword);
+				
 				const { data: signInData, error: signInError } = await data.supabase.auth.signInWithPassword({
 					email,
 					password,
