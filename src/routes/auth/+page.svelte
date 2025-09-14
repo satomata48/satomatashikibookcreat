@@ -86,7 +86,7 @@
 					email,
 					password,
 					options: {
-						emailRedirectTo: `${window.location.origin}/auth/callback`,
+						emailRedirectTo: `https://satomatashikibookcreat-ui8v.vercel.app/auth/callback`,
 					},
 				});
 				
