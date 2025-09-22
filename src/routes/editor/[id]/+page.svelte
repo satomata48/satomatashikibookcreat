@@ -17,12 +17,90 @@
 	let pageLayout = 'none'; // 'none' または 'a4'
 	let selectedTemplate = 'simple'; // テンプレート選択
 	
-	// HTMLを安全にサニタイズする関数
-	$: safeHtml = DOMPurify.sanitize(chapterContent || '', {
-		ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'hr', 'a', 'div', 'span', 'pre', 'code'],
-		ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
-		KEEP_CONTENT: true
-	});
+	// 改行を保持してHTMLをサニタイズする関数
+	function sanitizeWithLineBreaks(content: string): string {
+		if (!content) return '';
+		// プレーンテキストの改行を<br>タグに変換
+		const contentWithBreaks = content.replace(/\n/g, '<br>');
+		// pagebreakタグを除去（分割処理で使用するため表示には不要）
+		const contentWithoutPagebreaks = contentWithBreaks.replace(/<\/?pagebreak[^>]*>/gi, '');
+		return DOMPurify.sanitize(contentWithoutPagebreaks, {
+			ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'hr', 'a', 'div', 'span', 'pre', 'code'],
+			ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
+			KEEP_CONTENT: true
+		});
+	}
+
+	// エッセイテンプレート用：カスタムページブレークタグで章内容を分割する関数
+	function splitContentByPageBreaks(content: string): { content: string, isPageBreakContent: boolean }[] {
+		if (!content) return [{ content: '', isPageBreakContent: false }];
+
+		// デバッグ用ログ
+		console.log('Original content:', content);
+
+		let parts: { content: string, isPageBreakContent: boolean }[] = [];
+
+		// 方法1: <pagebreak>...</pagebreak> 囲みタグ形式を探す
+		const wrappedPageBreakPattern = /<pagebreak[^>]*>(.*?)<\/pagebreak>/gis;
+		const wrappedMatches = content.match(wrappedPageBreakPattern);
+
+		if (wrappedMatches && wrappedMatches.length > 0) {
+			// 囲みタグ形式の場合
+			let lastIndex = 0;
+			let match;
+			const regex = /<pagebreak[^>]*>(.*?)<\/pagebreak>/gis;
+
+			while ((match = regex.exec(content)) !== null) {
+				// pagebreakタグより前の内容
+				if (match.index > lastIndex) {
+					const beforeContent = content.substring(lastIndex, match.index).trim();
+					if (beforeContent) {
+						parts.push({ content: beforeContent, isPageBreakContent: false });
+					}
+				}
+
+				// pagebreakタグで囲まれた内容
+				const wrappedContent = match[1].trim();
+				if (wrappedContent) {
+					parts.push({ content: wrappedContent, isPageBreakContent: true });
+				}
+
+				lastIndex = match.index + match[0].length;
+			}
+
+			// 最後の部分
+			if (lastIndex < content.length) {
+				const remaining = content.substring(lastIndex).trim();
+				if (remaining) {
+					parts.push({ content: remaining, isPageBreakContent: false });
+				}
+			}
+		} else {
+			// 方法2: 単独<pagebreak>タグで分割
+			const singlePageBreakPattern = /<pagebreak\s*\/?>/gi;
+			const splitParts = content.split(singlePageBreakPattern);
+
+			// pagebreakタグがない場合は、H1タグで分割を試す
+			if (splitParts.length === 1) {
+				const h1Parts = content.split(/(?=<h1[^>]*>)/gi);
+				parts = h1Parts.filter(part => part.trim() !== '').map(part => ({ content: part.trim(), isPageBreakContent: false }));
+			} else {
+				parts = splitParts.filter(part => part.trim() !== '').map(part => ({ content: part.trim(), isPageBreakContent: false }));
+			}
+		}
+
+		console.log('Split parts:', parts);
+
+		if (parts.length === 0) {
+			return [{ content: content, isPageBreakContent: false }];
+		}
+
+		console.log('Final parts:', parts);
+		return parts;
+	}
+
+	// HTMLを安全にサニタイズする関数（改行を保持）
+	$: safeHtml = sanitizeWithLineBreaks(chapterContent || '');
 	
 	// デバッグ用: プレビューの状態をログ出力
 	$: if (typeof window !== 'undefined') {
@@ -135,6 +213,9 @@
 				break;
 			case 'blockquote':
 				insertText = `<blockquote>${selectedText || '引用文'}</blockquote>`;
+				break;
+			case 'pagebreak':
+				insertText = '<pagebreak>\n  改ページ\n</pagebreak>';
 				break;
 		}
 
@@ -522,6 +603,9 @@
 								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('blockquote')} type="button">
 									" 引用
 								</button>
+								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('pagebreak')} type="button">
+									📄 改ページ
+								</button>
 							</div>
 						{/if}
 
@@ -548,9 +632,9 @@
 													break-after: page;
 													position: relative;
 												}
-												.a4-page * { 
-													font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif !important; 
-													font-weight: bold !important; 
+												.a4-page * {
+													font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif !important;
+													font-weight: bold !important;
 													color: #3F51B5 !important;
 												}
 												.a4-page h1 { font-size: 18pt !important; margin-bottom: 2rem !important; text-align: center !important; }
@@ -565,6 +649,155 @@
 												.chapter-page .chapter-title {
 													margin-top: 0 !important;
 													padding-top: 0 !important;
+												}
+											</style>`}
+										{:else if selectedTemplate === 'essay'}
+											{@html `<style>
+												.a4-page-container {
+													background: #f0f0f0;
+													padding: 20px;
+													min-height: 100vh;
+												}
+												.a4-page {
+													width: 210mm;
+													min-height: 297mm;
+													background: white;
+													margin: 0 auto 20px auto;
+													padding: 25mm;
+													box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+													break-after: page;
+													position: relative;
+												}
+												.a4-page * {
+													font-family: "Noto Serif JP", "Yu Mincho", serif !important;
+													color: #2c2c2c !important;
+													line-height: 1.8 !important;
+												}
+												.a4-page h1 {
+													font-size: 18pt !important;
+													text-align: center !important;
+													margin: 2em 0 !important;
+													font-weight: normal !important;
+													color: #1a1a1a !important;
+													page-break-before: always !important;
+													page-break-after: avoid !important;
+												}
+												.a4-page h1:first-child {
+													page-break-before: auto !important;
+												}
+												.a4-page h2 {
+													font-size: 16pt !important;
+													margin-top: 2em !important;
+													margin-bottom: 1em !important;
+													font-weight: normal !important;
+													border-bottom: 1px solid #ddd !important;
+													padding-bottom: 0.5em !important;
+												}
+												.a4-page h3 {
+													font-size: 14pt !important;
+													margin-top: 1.5em !important;
+													margin-bottom: 1em !important;
+													font-weight: normal !important;
+												}
+												.a4-page p {
+													font-size: 12pt !important;
+													margin-bottom: 1rem !important;
+													text-align: justify !important;
+													text-indent: 1em !important;
+													line-height: 1.6 !important;
+												}
+												.a4-page {
+													padding: 25mm !important;
+													min-height: 297mm !important;
+													position: relative !important;
+												}
+												.chapter-title-header {
+													position: absolute !important;
+													top: 15mm !important;
+													right: 25mm !important;
+													font-size: 14pt !important;
+													color: #666 !important;
+													font-weight: normal !important;
+													text-align: right !important;
+													flex-grow: 0 !important;
+													flex-shrink: 0 !important;
+												}
+												/* pagebreakで囲まれた内容のみ大きく左寄り中央配置 */
+												.page-content.pagebreak-content {
+													display: flex !important;
+													flex-direction: column !important;
+													justify-content: center !important;
+													align-items: flex-start !important;
+													text-align: left !important;
+													flex-grow: 1 !important;
+													font-size: 44pt !important;
+													line-height: 2.8 !important;
+													padding: 40mm 20mm !important;
+													min-height: calc(100% - 60mm) !important;
+												}
+												.page-content.pagebreak-content * {
+													font-size: inherit !important;
+													line-height: inherit !important;
+													text-align: left !important;
+													margin-bottom: 2em !important;
+												}
+												/* 通常の内容は標準レイアウト */
+												.page-content:not(.pagebreak-content) {
+													padding-top: 30mm !important;
+												}
+											</style>`}
+										{:else if selectedTemplate === 'satomata-essay'}
+											{@html `<style>
+												.a4-page-container {
+													background: #f0f0f0;
+													padding: 20px;
+													min-height: 100vh;
+												}
+												.a4-page {
+													width: 210mm;
+													min-height: 297mm;
+													background: white;
+													margin: 0 auto 20px auto;
+													padding: 25mm;
+													box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+													break-after: page;
+													position: relative;
+												}
+												.a4-page * {
+													font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif !important;
+													font-weight: bold !important;
+													color: #3F51B5 !important;
+													line-height: 1.6 !important;
+												}
+												.a4-page h1 {
+													font-size: 18pt !important;
+													text-align: center !important;
+													margin: 2em 0 !important;
+													font-weight: bold !important;
+													color: #3F51B5 !important;
+												}
+												.a4-page h2 {
+													font-size: 16pt !important;
+													margin-top: 2em !important;
+													margin-bottom: 1em !important;
+													font-weight: bold !important;
+													color: #3F51B5 !important;
+												}
+												.a4-page h3 {
+													font-size: 14pt !important;
+													margin-top: 1.5em !important;
+													margin-bottom: 1em !important;
+													font-weight: bold !important;
+													color: #3F51B5 !important;
+												}
+												.a4-page p {
+													font-size: 12pt !important;
+													margin-bottom: 1rem !important;
+													text-align: justify !important;
+													text-indent: 1em !important;
+													line-height: 1.6 !important;
+													font-weight: bold !important;
+													color: #3F51B5 !important;
 												}
 											</style>`}
 										{:else}
@@ -593,57 +826,121 @@
 											</style>`}
 										{/if}
 										
-										<!-- 最初のページ（タイトルページ） -->
-										<div class="a4-page" data-template={selectedTemplate}>
-											<h1 style="{selectedTemplate === 'satomata' ? 'color: #3F51B5; font-family: Source Han Sans JP, sans-serif; font-weight: bold; font-size: 18pt; text-align: center;' : ''}">{book.title}</h1>
-											
-											<!-- 最初の章の内容（ページに収まる分だけ） -->
-											{#if chapters.length > 0 && chapters[0].content}
-												<div class="first-chapter">
-													<h2 style="{selectedTemplate === 'satomata' ? 'color: #3F51B5; font-family: Source Han Sans JP, sans-serif; font-weight: bold; font-size: 16pt;' : ''}">第1章：{chapters[0].title}</h2>
-													{@html selectedTemplate === 'satomata' ? 
-														`<div style="color: #3F51B5; font-family: 'Source Han Sans JP', sans-serif; font-weight: bold;">${DOMPurify.sanitize(chapters[0].content, {
-															ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'hr', 'a', 'div', 'span', 'pre', 'code'],
-															ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
-															KEEP_CONTENT: true
-														})}</div>` : 
-														DOMPurify.sanitize(chapters[0].content, {
-															ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'hr', 'a', 'div', 'span', 'pre', 'code'],
-															ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
-															KEEP_CONTENT: true
-														})
-													}
-												</div>
-											{:else if chapters.length > 0}
-												<div class="first-chapter">
-													<h2 style="{selectedTemplate === 'satomata' ? 'color: #3F51B5; font-family: Source Han Sans JP, sans-serif; font-weight: bold; font-size: 16pt;' : ''}">第1章：{chapters[0].title}</h2>
-													<p style="{selectedTemplate === 'satomata' ? 'color: #999; font-style: italic;' : ''}" class="text-gray-500 italic">（この章の内容はまだありません）</p>
-												</div>
-											{/if}
-										</div>
-										
-										<!-- 2章目以降は各章ごとに新しいページ -->
-										{#each chapters.slice(1) as chapter, index}
-											<div class="a4-page chapter-page" data-template={selectedTemplate}>
-												<h2 class="chapter-title" style="{selectedTemplate === 'satomata' ? 'color: #3F51B5; font-family: Source Han Sans JP, sans-serif; font-weight: bold; font-size: 16pt;' : ''}">第{index + 2}章：{chapter.title}</h2>
+										{#if selectedTemplate === 'essay'}
+											<!-- エッセイテンプレート: 書籍タイトルページ -->
+											<div class="a4-page" data-template={selectedTemplate}>
+												<h1>{book.title}</h1>
+											</div>
+
+											<!-- エッセイテンプレート: 各章をH1で分割して表示 -->
+											{#each chapters as chapter, index}
 												{#if chapter.content && chapter.content.trim()}
-													{@html selectedTemplate === 'satomata' ? 
-														`<div style="color: #3F51B5; font-family: 'Source Han Sans JP', sans-serif; font-weight: bold;">${DOMPurify.sanitize(chapter.content, {
-															ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'hr', 'a', 'div', 'span', 'pre', 'code'],
-															ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
-															KEEP_CONTENT: true
-														})}</div>` : 
-														DOMPurify.sanitize(chapter.content, {
-															ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'hr', 'a', 'div', 'span', 'pre', 'code'],
-															ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
-															KEEP_CONTENT: true
-														})
-													}
+													<!-- 章内容をページブレークタグで分割 -->
+													{@const contentParts = splitContentByPageBreaks(chapter.content)}
+													{#each contentParts as part, partIndex}
+														<div class="a4-page" data-template={selectedTemplate}>
+															<!-- 章タイトルヘッダー（右上） -->
+															<div class="chapter-title-header">{chapter.title}</div>
+
+															<!-- 分割された内容（pagebreakの場合は大きく中央配置、通常は標準レイアウト） -->
+															<div class="page-content {part.isPageBreakContent ? 'pagebreak-content' : ''}">
+																{@html sanitizeWithLineBreaks(part.content)}
+															</div>
+														</div>
+													{/each}
 												{:else}
-													<p style="{selectedTemplate === 'satomata' ? 'color: #999; font-style: italic;' : ''}" class="text-gray-500 italic">（この章の内容はまだありません）</p>
+													<!-- 内容がない場合 -->
+													<div class="a4-page" data-template={selectedTemplate}>
+														<!-- 章タイトルヘッダー（右上） -->
+														<div class="chapter-title-header">{chapter.title}</div>
+
+														<p class="text-gray-500 italic">（この章の内容はまだありません）</p>
+													</div>
+												{/if}
+											{/each}
+										{:else if selectedTemplate === 'satomata-essay'}
+											<!-- さとまた式エッセイテンプレート: 書籍タイトルページ -->
+											<div class="a4-page" data-template={selectedTemplate}>
+												<h1>{book.title}</h1>
+											</div>
+
+											<!-- さとまた式エッセイテンプレート: 各章をページブレークで分割 -->
+											{#each chapters as chapter, index}
+												{#if chapter.content && chapter.content.trim()}
+													<!-- 章内容をページブレークタグで分割 -->
+													{@const contentParts = splitContentByPageBreaks(chapter.content)}
+													{#each contentParts as part, partIndex}
+														{#if part.isPageBreakContent}
+															<!-- pagebreakコンテンツ用: フレックスレイアウト -->
+															<div class="a4-page" data-template={selectedTemplate} style="display: flex; flex-direction: column; position: relative;">
+																<!-- 章タイトルヘッダー（右上） -->
+																<div style="position: absolute; top: 15mm; right: 25mm; font-size: 12pt; color: #666; font-weight: bold; text-align: right; font-family: 'Source Han Sans JP', sans-serif; z-index: 10;">{chapter.title}</div>
+
+																<!-- pagebreakで囲まれた内容は大きく左寄り中央配置 -->
+																<div style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start; text-align: left; flex-grow: 1; font-size: 44pt; line-height: 2.8; margin: 25mm; font-weight: bold; color: #3F51B5; font-family: 'Source Han Sans JP', sans-serif;">
+																	{@html sanitizeWithLineBreaks(part.content)}
+																</div>
+															</div>
+														{:else}
+															<!-- 通常コンテンツ用: 標準レイアウト -->
+															<div class="a4-page" data-template={selectedTemplate} style="position: relative; display: block; justify-content: initial; align-items: initial;">
+																<!-- 章タイトルヘッダー（右上） -->
+																<div style="position: absolute; top: 15mm; right: 25mm; font-size: 12pt; color: #666; font-weight: bold; text-align: right; font-family: 'Source Han Sans JP', sans-serif; z-index: 10;">{chapter.title}</div>
+
+																<!-- 通常の内容は左寄り上部配置 -->
+																<div style="padding: 30mm 25mm 25mm 25mm; font-family: 'Source Han Sans JP', sans-serif; font-weight: bold; color: #3F51B5; font-size: 12pt; line-height: 1.6; text-align: left; position: relative; top: 0; display: block;">
+																	{@html sanitizeWithLineBreaks(part.content)}
+																</div>
+															</div>
+														{/if}
+													{/each}
+												{:else}
+													<!-- 内容がない場合 -->
+													<div class="a4-page" data-template={selectedTemplate}>
+														<!-- 章タイトルヘッダー（右上） -->
+														<div style="position: absolute; top: 15mm; right: 25mm; font-size: 12pt; color: #666; font-weight: bold; text-align: right; font-family: 'Source Han Sans JP', sans-serif;">{chapter.title}</div>
+
+														<p style="color: #999; font-style: italic; padding-top: 30mm;">（この章の内容はまだありません）</p>
+													</div>
+												{/if}
+											{/each}
+										{:else}
+											<!-- 他のテンプレート: 最初のページ（タイトルページ） -->
+											<div class="a4-page" data-template={selectedTemplate}>
+												<h1 style="{selectedTemplate === 'satomata' ? 'color: #3F51B5; font-family: Source Han Sans JP, sans-serif; font-weight: bold; font-size: 18pt; text-align: center;' : ''}">{book.title}</h1>
+
+												<!-- 最初の章の内容（ページに収まる分だけ） -->
+												{#if chapters.length > 0 && chapters[0].content}
+													<div class="first-chapter">
+														<h2 style="{selectedTemplate === 'satomata' ? 'color: #3F51B5; font-family: Source Han Sans JP, sans-serif; font-weight: bold; font-size: 16pt;' : ''}">第1章：{chapters[0].title}</h2>
+														{@html selectedTemplate === 'satomata' ?
+															`<div style="color: #3F51B5; font-family: 'Source Han Sans JP', sans-serif; font-weight: bold;">${sanitizeWithLineBreaks(chapters[0].content)}</div>` :
+															sanitizeWithLineBreaks(chapters[0].content)
+														}
+													</div>
+												{:else if chapters.length > 0}
+													<div class="first-chapter">
+														<h2 style="{selectedTemplate === 'satomata' ? 'color: #3F51B5; font-family: Source Han Sans JP, sans-serif; font-weight: bold; font-size: 16pt;' : ''}">第1章：{chapters[0].title}</h2>
+														<p style="{selectedTemplate === 'satomata' ? 'color: #999; font-style: italic;' : ''}" class="text-gray-500 italic">（この章の内容はまだありません）</p>
+													</div>
 												{/if}
 											</div>
-										{/each}
+
+											<!-- 2章目以降は各章ごとに新しいページ -->
+											{#each chapters.slice(1) as chapter, index}
+												<div class="a4-page chapter-page" data-template={selectedTemplate}>
+													<h2 class="chapter-title" style="{selectedTemplate === 'satomata' ? 'color: #3F51B5; font-family: Source Han Sans JP, sans-serif; font-weight: bold; font-size: 16pt;' : ''}">第{index + 2}章：{chapter.title}</h2>
+													{#if chapter.content && chapter.content.trim()}
+														{@html selectedTemplate === 'satomata' ?
+															`<div style="color: #3F51B5; font-family: 'Source Han Sans JP', sans-serif; font-weight: bold;">${sanitizeWithLineBreaks(chapter.content)}</div>` :
+															sanitizeWithLineBreaks(chapter.content)
+														}
+													{:else}
+														<p style="{selectedTemplate === 'satomata' ? 'color: #999; font-style: italic;' : ''}" class="text-gray-500 italic">（この章の内容はまだありません）</p>
+													{/if}
+												</div>
+											{/each}
+										{/if}
 										
 										{#if chapters.length === 0}
 											<div class="a4-page" data-template={selectedTemplate}>
@@ -685,17 +982,9 @@
 											<div class="chapter-section" style="margin-bottom: 2rem;">
 												<h2 style="{selectedTemplate === 'satomata' ? 'color: #3F51B5; font-family: Source Han Sans JP, sans-serif; font-weight: bold; font-size: 16pt;' : ''}">第{index + 1}章：{chapter.title}</h2>
 												{#if chapter.content && chapter.content.trim()}
-													{@html selectedTemplate === 'satomata' ? 
-														`<div style="color: #3F51B5; font-family: 'Source Han Sans JP', sans-serif; font-weight: bold;">${DOMPurify.sanitize(chapter.content, {
-															ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'hr', 'a', 'div', 'span', 'pre', 'code'],
-															ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
-															KEEP_CONTENT: true
-														})}</div>` : 
-														DOMPurify.sanitize(chapter.content, {
-															ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'hr', 'a', 'div', 'span', 'pre', 'code'],
-															ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
-															KEEP_CONTENT: true
-														})
+													{@html selectedTemplate === 'satomata' ?
+														`<div style="color: #3F51B5; font-family: 'Source Han Sans JP', sans-serif; font-weight: bold;">${sanitizeWithLineBreaks(chapter.content)}</div>` :
+														sanitizeWithLineBreaks(chapter.content)
 													}
 												{:else}
 													<p style="{selectedTemplate === 'satomata' ? 'color: #999; font-style: italic;' : ''}" class="text-gray-500 italic">（この章の内容はまだありません）</p>
@@ -762,6 +1051,23 @@
 <style>
 	.textarea {
 		font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+		line-height: 1.8;
+	}
+
+	/* プレビュー内の改行とスペーシングを適切に表示 */
+	.preview-content {
+		white-space: pre-wrap;
+		word-wrap: break-word;
+	}
+
+	.a4-page {
+		white-space: pre-wrap;
+		word-wrap: break-word;
+	}
+
+	/* 改行タグの行間を適切に設定 */
+	.preview-content br,
+	.a4-page br {
 		line-height: 1.8;
 	}
 </style>

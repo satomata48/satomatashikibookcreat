@@ -382,6 +382,222 @@ export const templates: Template[] = [
 			size: 'A4',
 			margin: '25mm'
 		}
+	},
+	{
+		id: 'essay',
+		name: 'エッセイテンプレート',
+		description: '章タイトル右上表示とH1改ページ機能付きエッセイスタイル',
+		icon: '✍️',
+		features: ['章タイトル右上表示', 'H1タグで自動改ページ', '上品なフォント', 'A4最適化'],
+		previewStyle: `
+			font-family: "Noto Serif JP", "Yu Mincho", serif;
+			font-size: 13pt;
+			line-height: 1.8;
+			color: #2c2c2c;
+			max-width: 800px;
+			margin: 0 auto;
+			padding: 2rem;
+			background: white;
+		`,
+		cssStyles: `
+			body {
+				font-family: "Noto Serif JP", "Yu Mincho", serif;
+				font-size: 13pt;
+				line-height: 1.8;
+				color: #2c2c2c;
+				width: 210mm;
+				min-height: 297mm;
+				margin: 0 auto;
+				padding: 25mm;
+				background: white;
+				position: relative;
+			}
+
+			.chapter-title-header {
+				position: absolute;
+				top: 15mm;
+				right: 25mm;
+				font-size: 12pt;
+				color: #666;
+				font-weight: normal;
+				text-align: right;
+			}
+
+			h1 {
+				font-size: 20pt;
+				text-align: center;
+				margin: 2em 0;
+				font-weight: normal;
+				color: #1a1a1a;
+				page-break-before: always;
+				page-break-after: avoid;
+			}
+
+			h1:first-child {
+				page-break-before: auto;
+			}
+
+			h2 {
+				font-size: 16pt;
+				margin-top: 2em;
+				margin-bottom: 1em;
+				font-weight: normal;
+				color: #333;
+				border-bottom: 1px solid #ddd;
+				padding-bottom: 0.5em;
+			}
+
+			h3 {
+				font-size: 14pt;
+				margin-top: 1.5em;
+				margin-bottom: 1em;
+				font-weight: normal;
+				color: #444;
+			}
+
+			p {
+				margin-bottom: 1.2em;
+				text-align: justify;
+				text-indent: 1em;
+				orphans: 2;
+				widows: 2;
+			}
+
+			blockquote {
+				margin: 1.5em 0;
+				padding: 1em 1.5em;
+				border-left: 3px solid #ccc;
+				background-color: #f9f9f9;
+				font-style: italic;
+			}
+
+			ul, ol {
+				margin-bottom: 1.2em;
+				padding-left: 2em;
+			}
+
+			li {
+				margin-bottom: 0.5em;
+			}
+		`,
+		pageSetup: {
+			size: 'A4',
+			margin: '25mm'
+		}
+	},
+	{
+		id: 'satomata-essay',
+		name: 'さとまた式エッセイ',
+		description: 'さとまた式フォントでページブレーク機能付きエッセイスタイル',
+		icon: '🌟',
+		features: ['章タイトル右上表示', 'pagebreakタグで改ページ', 'Source Han Sans JP太字', 'A4最適化'],
+		previewStyle: `
+			font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif;
+			font-weight: bold;
+			font-size: 12pt;
+			line-height: 1.6;
+			color: #3F51B5;
+			max-width: 800px;
+			margin: 0 auto;
+			padding: 2rem;
+			background: white;
+		`,
+		cssStyles: `
+			body {
+				font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif;
+				font-weight: bold;
+				font-size: 12pt;
+				line-height: 1.6;
+				color: #3F51B5;
+				width: 210mm;
+				min-height: 297mm;
+				margin: 0 auto;
+				padding: 25mm;
+				background: white;
+				position: relative;
+			}
+
+			.chapter-title-header {
+				position: absolute;
+				top: 15mm;
+				right: 25mm;
+				font-size: 12pt;
+				color: #666;
+				font-weight: bold;
+				text-align: right;
+			}
+
+			h1 {
+				font-size: 18pt;
+				text-align: center;
+				margin: 2em 0;
+				font-weight: bold;
+				color: #3F51B5;
+			}
+
+			h2 {
+				font-size: 16pt;
+				margin-top: 2em;
+				margin-bottom: 1em;
+				font-weight: bold;
+				color: #3F51B5;
+			}
+
+			h3 {
+				font-size: 14pt;
+				margin-top: 1.5em;
+				margin-bottom: 1em;
+				font-weight: bold;
+				color: #3F51B5;
+			}
+
+			p {
+				margin-bottom: 1rem;
+				text-align: justify;
+				text-indent: 1em;
+				font-weight: bold;
+				color: #3F51B5;
+			}
+
+			/* pagebreakで囲まれた内容は大きく左寄り中央配置 */
+			.pagebreak-content {
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: flex-start;
+				text-align: left;
+				min-height: calc(100% - 60mm);
+				font-size: 44pt;
+				line-height: 2.8;
+				padding: 40mm 20mm;
+				font-weight: bold;
+				color: #3F51B5;
+			}
+
+			blockquote {
+				margin: 1rem 0;
+				padding: 1rem;
+				background: #f9f9f9;
+				border-left: 4px solid #3F51B5;
+				font-weight: bold;
+				color: #3F51B5;
+			}
+
+			ul, ol {
+				margin-bottom: 1rem;
+				padding-left: 2rem;
+			}
+
+			li {
+				margin-bottom: 0.5rem;
+				font-weight: bold;
+				color: #3F51B5;
+			}
+		`,
+		pageSetup: {
+			size: 'A4',
+			margin: '25mm'
+		}
 	}
 ];
 

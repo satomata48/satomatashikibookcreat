@@ -28,9 +28,12 @@
 	$: selectedTemplateData = getTemplate(selectedTemplate);
 	$: selectedTemplateStyle = selectedTemplateData?.previewStyle || '';
 	
-	// HTMLを安全にサニタイズ
+	// HTMLを安全にサニタイズ（改行を保持）
 	function sanitizeHtml(html: string) {
-		return DOMPurify.sanitize(html, {
+		if (!html) return '';
+		// プレーンテキストの改行を<br>タグに変換
+		const htmlWithBreaks = html.replace(/\n/g, '<br>');
+		return DOMPurify.sanitize(htmlWithBreaks, {
 			ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'hr', 'a'],
 			ALLOWED_ATTR: ['href', 'target', 'rel']
 		});
@@ -180,7 +183,7 @@
 								<span class="text-sm text-gray-500 ml-2">({chapter.word_count}文字)</span>
 							</div>
 							<div class="collapse-content">
-								<div class="prose prose-sm max-w-none p-4 bg-white rounded-lg">
+								<div class="prose prose-sm max-w-none p-4 bg-white rounded-lg" style="white-space: pre-wrap; word-wrap: break-word;">
 									{@html sanitizeHtml(chapter.content || '')}
 								</div>
 							</div>
@@ -239,7 +242,7 @@
 				
 				<!-- テンプレート別プレビュー -->
 				<div class="mockup-window border bg-base-300">
-					<div class="px-4 py-6 bg-white overflow-y-auto max-h-96">
+					<div class="px-4 py-6 bg-white overflow-y-auto max-h-96" style="white-space: pre-wrap; word-wrap: break-word;">
 						<div style={selectedTemplateStyle}>
 							<!-- タイトル表示 -->
 							{#if selectedTemplate === 'a4-print'}
@@ -258,6 +261,10 @@
 								<h1 style="font-family: 'Source Han Sans JP', 'Noto Sans JP', sans-serif; font-size: 18pt; font-weight: bold; margin-bottom: 1rem;">
 									{book.title}
 								</h1>
+							{:else if selectedTemplate === 'essay'}
+								<h1 style="font-family: 'Noto Serif JP', 'Yu Mincho', serif; font-size: 20pt; text-align: center; margin: 2em 0; font-weight: normal; color: #1a1a1a;">
+									{book.title}
+								</h1>
 							{:else}
 								<h1 style="font-size: 20pt; margin-bottom: 1em; font-weight: bold;">
 									{book.title}
@@ -268,6 +275,10 @@
 							{#if authorName}
 								{#if selectedTemplate === 'satomata'}
 									<p style="font-family: 'Source Han Sans JP', 'Noto Sans JP', sans-serif; font-weight: bold; text-align: center; margin-bottom: 2em; opacity: 0.8;">
+										{authorName}
+									</p>
+								{:else if selectedTemplate === 'essay'}
+									<p style="font-family: 'Noto Serif JP', 'Yu Mincho', serif; text-align: center; margin-bottom: 2em; opacity: 0.8; font-style: italic;">
 										{authorName}
 									</p>
 								{:else}
@@ -295,6 +306,12 @@
 									<h2 style="font-family: 'Source Han Sans JP', 'Noto Sans JP', sans-serif; font-size: 16pt; font-weight: bold; color: #3F51B5; margin-top: 1.5rem; margin-bottom: 1rem;">
 										第1章: {chapters[0].title}
 									</h2>
+								{:else if selectedTemplate === 'essay'}
+									<div style="position: relative;">
+										<div style="position: absolute; top: -2em; right: 0; font-family: 'Noto Serif JP', 'Yu Mincho', serif; font-size: 12pt; color: #666; text-align: right;">
+											{chapters[0].title}
+										</div>
+									</div>
 								{:else}
 									<h2 style="font-size: 16pt; margin-top: 1.5em; font-weight: bold;">
 										第1章: {chapters[0].title}
@@ -319,6 +336,13 @@
 											{@html sanitizeHtml(chapters[0].content?.substring(0, 300) || '')}
 											{#if chapters[0].content && chapters[0].content.length > 300}
 												<span style="opacity: 0.6; font-weight: bold; color: #3F51B5;">...</span>
+											{/if}
+										</div>
+									{:else if selectedTemplate === 'essay'}
+										<div style="font-family: 'Noto Serif JP', 'Yu Mincho', serif; text-align: justify; text-indent: 1em; line-height: 1.8; color: #2c2c2c;">
+											{@html sanitizeHtml(chapters[0].content?.substring(0, 300) || '')}
+											{#if chapters[0].content && chapters[0].content.length > 300}
+												<span style="opacity: 0.6;">...</span>
 											{/if}
 										</div>
 									{:else}
