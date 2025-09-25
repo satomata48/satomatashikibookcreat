@@ -16,6 +16,7 @@
 	let isPreviewMode = false;
 	let pageLayout = 'none'; // 'none' または 'a4'
 	let selectedTemplate = 'simple'; // テンプレート選択
+	let showBookSettings = false;
 	
 	// 改行を保持してHTMLをサニタイズする関数
 	function sanitizeWithLineBreaks(content: string): string {
@@ -373,6 +374,28 @@
 		}
 	}
 	
+	// 書籍情報を更新する関数
+	async function updateBookInfo(updates: any) {
+		try {
+			const { error } = await data.supabase
+				.from('books')
+				.update(updates)
+				.eq('id', bookId);
+
+			if (error) {
+				console.error('Error updating book info:', error);
+				alert('書籍情報の更新に失敗しました');
+			} else {
+				// 書籍データを更新
+				book = { ...book, ...updates };
+				alert('書籍情報を更新しました');
+			}
+		} catch (error) {
+			console.error('Error updating book info:', error);
+			alert('書籍情報の更新に失敗しました');
+		}
+	}
+
 	// ページレイアウトまたはテンプレートが変更されたときに自動保存
 	$: if ((pageLayout || selectedTemplate) && book) {
 		saveLayoutSettings();
@@ -426,7 +449,7 @@
 			<!-- テンプレート選択 -->
 			<div class="flex items-center space-x-2">
 				<span class="text-sm font-medium text-base-content/80">テンプレート:</span>
-				<select bind:value={selectedTemplate} class="select select-bordered select-sm w-36">
+				<select bind:value={selectedTemplate} class="select select-bordered select-sm w-48">
 					{#each templates as template}
 						<option value={template.id}>{template.icon} {template.name.replace('テンプレート', '')}</option>
 					{/each}
@@ -451,12 +474,22 @@
 			
 			<!-- ボタン群 -->
 			<div class="flex space-x-2">
-				<button 
+				<!-- 書籍設定ボタン（一時的に無効化）
+				<button
+					on:click={() => showBookSettings = true}
+					class="btn btn-outline btn-sm"
+					type="button"
+				>
+					⚙️ 書籍設定
+				</button>
+				-->
+
+				<button
 					on:click={() => {
 						clearTimeout(saveTimeout);
 						saveChapter();
-					}} 
-					class="btn btn-primary btn-sm" 
+					}}
+					class="btn btn-primary btn-sm"
 					disabled={isSaving}
 					type="button"
 				>
@@ -465,8 +498,8 @@
 					{/if}
 					💾 保存
 				</button>
-				
-				<button 
+
+				<button
 					on:click={() => goto(`/convert/${bookId}`)}
 					class="btn btn-secondary btn-sm"
 					type="button"
@@ -707,7 +740,7 @@
 													line-height: 1.6 !important;
 												}
 												.a4-page {
-													padding: 25mm !important;
+													padding: 10mm !important;
 													min-height: 297mm !important;
 													position: relative !important;
 												}
@@ -731,9 +764,9 @@
 													text-align: left !important;
 													flex-grow: 1 !important;
 													font-size: 44pt !important;
-													line-height: 2.8 !important;
-													padding: 40mm 20mm !important;
-													min-height: calc(100% - 60mm) !important;
+													line-height: 2.4 !important;
+													padding: 25mm 10mm !important;
+													min-height: calc(100% - 40mm) !important;
 												}
 												.page-content.pagebreak-content * {
 													font-size: inherit !important;
@@ -743,10 +776,45 @@
 												}
 												/* 通常の内容は標準レイアウト */
 												.page-content:not(.pagebreak-content) {
-													padding-top: 30mm !important;
+													padding: 15mm 10mm 10mm 10mm !important;
+													font-size: 13pt !important;
+													line-height: 1.8 !important;
+													text-align: left !important;
+													display: block !important;
+													justify-content: flex-start !important;
+													align-items: flex-start !important;
+													width: 100% !important;
+													max-width: none !important;
+													box-sizing: border-box !important;
+												}
+												.page-content:not(.pagebreak-content) * {
+													font-size: inherit !important;
+													line-height: inherit !important;
+													text-align: left !important;
+													margin-bottom: 1.2em !important;
+													width: auto !important;
+													max-width: none !important;
+												}
+												.page-content:not(.pagebreak-content) p {
+													text-align: left !important;
+													text-indent: 1em !important;
+													word-wrap: break-word !important;
+													overflow-wrap: break-word !important;
+													width: 100% !important;
+													max-width: none !important;
+													display: block !important;
+													box-sizing: border-box !important;
+												}
+												/* 通常ページの見出しはテンプレートの色を維持 */
+												.page-content:not(.pagebreak-content) h1,
+												.page-content:not(.pagebreak-content) h2,
+												.page-content:not(.pagebreak-content) h3 {
+													color: #3F51B5 !important;
+													font-weight: bold !important;
+													text-align: left !important;
 												}
 											</style>`}
-										{:else if selectedTemplate === 'satomata-essay'}
+										{:else if selectedTemplate === 'satomata-life-lessons'}
 											{@html `<style>
 												.a4-page-container {
 													background: #f0f0f0;
@@ -758,23 +826,26 @@
 													min-height: 297mm;
 													background: white;
 													margin: 0 auto 20px auto;
-													padding: 25mm;
+													padding: 10mm;
 													box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 													break-after: page;
 													position: relative;
 												}
 												.a4-page * {
 													font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif !important;
-													font-weight: bold !important;
-													color: #3F51B5 !important;
-													line-height: 1.6 !important;
+													line-height: 1.8 !important;
 												}
 												.a4-page h1 {
-													font-size: 18pt !important;
+													font-size: 20pt !important;
 													text-align: center !important;
 													margin: 2em 0 !important;
 													font-weight: bold !important;
 													color: #3F51B5 !important;
+													page-break-before: always !important;
+													page-break-after: avoid !important;
+												}
+												.a4-page h1:first-child {
+													page-break-before: auto !important;
 												}
 												.a4-page h2 {
 													font-size: 16pt !important;
@@ -782,6 +853,8 @@
 													margin-bottom: 1em !important;
 													font-weight: bold !important;
 													color: #3F51B5 !important;
+													border-bottom: 1px solid #ddd !important;
+													padding-bottom: 0.5em !important;
 												}
 												.a4-page h3 {
 													font-size: 14pt !important;
@@ -791,13 +864,97 @@
 													color: #3F51B5 !important;
 												}
 												.a4-page p {
-													font-size: 12pt !important;
-													margin-bottom: 1rem !important;
+													font-size: 13pt !important;
+													margin-bottom: 1.2em !important;
 													text-align: justify !important;
 													text-indent: 1em !important;
-													line-height: 1.6 !important;
+													line-height: 1.8 !important;
+													font-weight: normal !important;
+													color: #333 !important;
+													width: 100% !important;
+													max-width: none !important;
+													box-sizing: border-box !important;
+													max-width: none !important;
+													word-wrap: break-word !important;
+													overflow-wrap: break-word !important;
+													width: 100% !important;
+													max-width: none !important;
+													display: block !important;
+													box-sizing: border-box !important;
+												}
+												.a4-page {
+													padding: 10mm !important;
+													min-height: 297mm !important;
+													position: relative !important;
+												}
+												.chapter-title-header {
+													position: absolute !important;
+													top: 8mm !important;
+													right: 10mm !important;
+													font-size: 12pt !important;
+													color: #E91E63 !important;
 													font-weight: bold !important;
+													text-align: right !important;
+													flex-grow: 0 !important;
+													flex-shrink: 0 !important;
+												}
+												/* pagebreakで囲まれた内容のみ大きく左寄り中央配置 */
+												.page-content.pagebreak-content {
+													display: flex !important;
+													flex-direction: column !important;
+													justify-content: center !important;
+													align-items: flex-start !important;
+													text-align: left !important;
+													flex-grow: 1 !important;
+													font-size: 44pt !important;
+													line-height: 2.4 !important;
+													padding: 25mm 10mm !important;
+													min-height: calc(100% - 40mm) !important;
+												}
+												.page-content.pagebreak-content * {
+													font-size: inherit !important;
+													line-height: inherit !important;
+													text-align: left !important;
+													margin-bottom: 2em !important;
+												}
+												/* 通常の内容は標準レイアウト */
+												.page-content:not(.pagebreak-content) {
+													padding: 15mm 10mm 10mm 10mm !important;
+													font-size: 13pt !important;
+													line-height: 1.8 !important;
+													text-align: left !important;
+													display: block !important;
+													justify-content: flex-start !important;
+													align-items: flex-start !important;
+													width: 100% !important;
+													max-width: none !important;
+													box-sizing: border-box !important;
+												}
+												.page-content:not(.pagebreak-content) * {
+													font-size: inherit !important;
+													line-height: inherit !important;
+													text-align: left !important;
+													margin-bottom: 1.2em !important;
+													width: auto !important;
+													max-width: none !important;
+												}
+												.page-content:not(.pagebreak-content) p {
+													text-align: left !important;
+													text-indent: 1em !important;
+													word-wrap: break-word !important;
+													overflow-wrap: break-word !important;
+													width: 100% !important;
+													max-width: none !important;
+													display: block !important;
+													box-sizing: border-box !important;
+												}
+												/* 通常ページの見出しはテンプレートの色を維持 */
+												.page-content:not(.pagebreak-content) h1,
+												.page-content:not(.pagebreak-content) h2,
+												.page-content:not(.pagebreak-content) h3 {
 													color: #3F51B5 !important;
+													font-weight: bold !important;
+													text-align: left !important;
 												}
 											</style>`}
 										{:else}
@@ -858,49 +1015,35 @@
 													</div>
 												{/if}
 											{/each}
-										{:else if selectedTemplate === 'satomata-essay'}
-											<!-- さとまた式エッセイテンプレート: 書籍タイトルページ -->
+										{:else if selectedTemplate === 'satomata-life-lessons'}
+											<!-- さとまた式人生の教えテンプレート: 書籍タイトルページ -->
 											<div class="a4-page" data-template={selectedTemplate}>
 												<h1>{book.title}</h1>
 											</div>
 
-											<!-- さとまた式エッセイテンプレート: 各章をページブレークで分割 -->
+											<!-- さとまた式人生の教えテンプレート: 各章をページブレークで分割 -->
 											{#each chapters as chapter, index}
 												{#if chapter.content && chapter.content.trim()}
 													<!-- 章内容をページブレークタグで分割 -->
 													{@const contentParts = splitContentByPageBreaks(chapter.content)}
 													{#each contentParts as part, partIndex}
-														{#if part.isPageBreakContent}
-															<!-- pagebreakコンテンツ用: フレックスレイアウト -->
-															<div class="a4-page" data-template={selectedTemplate} style="display: flex; flex-direction: column; position: relative;">
-																<!-- 章タイトルヘッダー（右上） -->
-																<div style="position: absolute; top: 15mm; right: 25mm; font-size: 12pt; color: #666; font-weight: bold; text-align: right; font-family: 'Source Han Sans JP', sans-serif; z-index: 10;">{chapter.title}</div>
+														<div class="a4-page" data-template={selectedTemplate}>
+															<!-- 章タイトルヘッダー（右上） -->
+															<div class="chapter-title-header">{chapter.title}</div>
 
-																<!-- pagebreakで囲まれた内容は大きく左寄り中央配置 -->
-																<div style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start; text-align: left; flex-grow: 1; font-size: 44pt; line-height: 2.8; margin: 25mm; font-weight: bold; color: #3F51B5; font-family: 'Source Han Sans JP', sans-serif;">
-																	{@html sanitizeWithLineBreaks(part.content)}
-																</div>
+															<!-- 分割された内容（pagebreakの場合は大きく中央配置、通常は標準レイアウト） -->
+															<div class="page-content {part.isPageBreakContent ? 'pagebreak-content' : ''}">
+																{@html sanitizeWithLineBreaks(part.content)}
 															</div>
-														{:else}
-															<!-- 通常コンテンツ用: 標準レイアウト -->
-															<div class="a4-page" data-template={selectedTemplate} style="position: relative; display: block; justify-content: initial; align-items: initial;">
-																<!-- 章タイトルヘッダー（右上） -->
-																<div style="position: absolute; top: 15mm; right: 25mm; font-size: 12pt; color: #666; font-weight: bold; text-align: right; font-family: 'Source Han Sans JP', sans-serif; z-index: 10;">{chapter.title}</div>
-
-																<!-- 通常の内容は左寄り上部配置 -->
-																<div style="padding: 30mm 25mm 25mm 25mm; font-family: 'Source Han Sans JP', sans-serif; font-weight: bold; color: #3F51B5; font-size: 12pt; line-height: 1.6; text-align: left; position: relative; top: 0; display: block;">
-																	{@html sanitizeWithLineBreaks(part.content)}
-																</div>
-															</div>
-														{/if}
+														</div>
 													{/each}
 												{:else}
 													<!-- 内容がない場合 -->
 													<div class="a4-page" data-template={selectedTemplate}>
 														<!-- 章タイトルヘッダー（右上） -->
-														<div style="position: absolute; top: 15mm; right: 25mm; font-size: 12pt; color: #666; font-weight: bold; text-align: right; font-family: 'Source Han Sans JP', sans-serif;">{chapter.title}</div>
+														<div class="chapter-title-header">{chapter.title}</div>
 
-														<p style="color: #999; font-style: italic; padding-top: 30mm;">（この章の内容はまだありません）</p>
+														<p class="text-gray-500 italic">（この章の内容はまだありません）</p>
 													</div>
 												{/if}
 											{/each}
@@ -953,9 +1096,9 @@
 									<div class="bg-white border border-base-300 rounded-lg preview-content" data-template={selectedTemplate} style="{templateStyle}; padding: 2rem; margin: 1rem;">
 										{#if selectedTemplate === 'satomata'}
 											{@html `<style>
-												.preview-content * { 
-													font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif !important; 
-													font-weight: bold !important; 
+												.preview-content * {
+													font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif !important;
+													font-weight: bold !important;
 													color: #3F51B5 !important;
 												}
 												.preview-content h1 { font-size: 18pt !important; margin-bottom: 2rem !important; }
@@ -971,6 +1114,45 @@
 													page-break-before: always !important;
 													margin-top: 0 !important;
 													padding-top: 0 !important;
+												}
+											</style>`}
+										{:else if selectedTemplate === 'satomata-life-lessons'}
+											{@html `<style>
+												/* さとまた式人生の教え: 見出しのみ特別スタイル */
+												.preview-content h1 {
+													font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif !important;
+													font-weight: bold !important;
+													color: #3F51B5 !important;
+													font-size: 18pt !important;
+													margin-bottom: 2rem !important;
+												}
+												.preview-content h2 {
+													font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif !important;
+													font-weight: bold !important;
+													color: #3F51B5 !important;
+													font-size: 16pt !important;
+													margin-top: 1.5rem !important;
+													margin-bottom: 1rem !important;
+												}
+												.preview-content h3 {
+													font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif !important;
+													font-weight: bold !important;
+													color: #3F51B5 !important;
+													font-size: 14pt !important;
+													margin-top: 1.2rem !important;
+													margin-bottom: 0.8rem !important;
+												}
+												/* 通常の文字は通常スタイル - 最強制適用 */
+												.preview-content p,
+												.preview-content div,
+												.preview-content span {
+													font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif !important;
+													font-weight: normal !important;
+													color: #333333 !important;
+													font-size: 13pt !important;
+													margin-bottom: 1rem !important;
+													text-align: left !important;
+													text-indent: 1em !important;
 												}
 											</style>`}
 										{/if}
@@ -1047,6 +1229,27 @@
 		</div>
 	</div>
 </div>
+
+<!-- 書籍設定モーダル（一時的に無効化）
+{#if showBookSettings}
+	<div class="modal modal-open">
+		<div class="modal-box bg-white border border-blue-100 shadow-xl max-w-md">
+			<h3 class="font-bold text-lg mb-4 text-blue-900">書籍設定</h3>
+			<p>カテゴリ機能を有効化する前に、Supabaseマイグレーションを適用してください。</p>
+			<div class="modal-action">
+				<button
+					type="button"
+					on:click={() => showBookSettings = false}
+					class="btn btn-primary"
+				>
+					閉じる
+				</button>
+			</div>
+		</div>
+		<div class="modal-backdrop" on:click={() => showBookSettings = false}></div>
+	</div>
+{/if}
+-->
 
 <style>
 	.textarea {

@@ -57,7 +57,8 @@
       "Bash(git push:*)",
       "Bash(git remote remove:*)",
       "Bash(git remote:*)",
-      "Bash(gh:*)"
+      "Bash(gh:*)",
+      "Bash(npx supabase:*)"
     ],
     "deny": [],
     "ask": []

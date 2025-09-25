@@ -5,12 +5,14 @@
 	export let data: PageData;
 	
 	let searchQuery = '';
+	// let selectedCategoryId = '';
 	let viewMode: 'grid' | 'list' = 'grid';
 	let showNewBookModal = false;
 	let newBookTitle = '';
+	let newBookCategoryId = '';
 	let creating = false;
 	
-	$: filteredBooks = data.books?.filter(book => 
+	$: filteredBooks = data.books?.filter(book =>
 		book.title.toLowerCase().includes(searchQuery.toLowerCase())
 	) || [];
 	
@@ -41,6 +43,7 @@
 			creating = false;
 			showNewBookModal = false;
 			newBookTitle = '';
+			newBookCategoryId = '';
 		}
 	};
 	
@@ -95,6 +98,15 @@
 				class="input input-bordered w-full border-blue-200 focus:border-blue-400"
 			/>
 		</div>
+		<!-- カテゴリフィルター（一時的に無効化）
+		<div class="w-48">
+			<select
+				class="select select-bordered w-full border-blue-200 focus:border-blue-400 text-blue-700"
+			>
+				<option value="">すべてのカテゴリ</option>
+			</select>
+		</div>
+		-->
 		<div class="btn-group">
 			<button
 				on:click={() => viewMode = 'grid'}
@@ -154,8 +166,17 @@
 						<p class="text-sm text-blue-700">
 							{book.author || '著者未設定'}
 						</p>
-						<div class="badge border-blue-300 text-blue-700">
-							{book.status === 'draft' ? '下書き' : book.status === 'published' ? '公開済み' : 'アーカイブ'}
+						<div class="flex gap-2 flex-wrap">
+							<div class="badge border-blue-300 text-blue-700">
+								{book.status === 'draft' ? '下書き' : book.status === 'published' ? '公開済み' : 'アーカイブ'}
+							</div>
+							<!-- カテゴリ表示（一時的に無効化）
+							{#if book.category}
+								<div class="badge border-indigo-300 text-indigo-700 bg-indigo-50">
+									{book.category.name}
+								</div>
+							{/if}
+							-->
 						</div>
 						<p class="text-xs text-blue-600 mt-2">
 							更新: {formatDate(book.updated_at)}
@@ -180,6 +201,7 @@
 					<tr class="bg-blue-50 text-blue-900">
 						<th>タイトル</th>
 						<th>著者</th>
+						<!-- <th>カテゴリ</th> -->
 						<th>ステータス</th>
 						<th>更新日</th>
 						<th>アクション</th>
@@ -190,6 +212,17 @@
 						<tr class="hover:bg-blue-25 border-blue-100">
 							<td class="font-semibold text-blue-900">{book.title}</td>
 							<td class="text-blue-700">{book.author || '著者未設定'}</td>
+							<!-- カテゴリ列（一時的に無効化）
+							<td>
+								{#if book.category}
+									<div class="badge border-indigo-300 text-indigo-700 bg-indigo-50">
+										{book.category.name}
+									</div>
+								{:else}
+									<span class="text-gray-400">未分類</span>
+								{/if}
+							</td>
+							-->
 							<td>
 								<div class="badge border-blue-300 text-blue-700">
 									{book.status === 'draft' ? '下書き' : book.status === 'published' ? '公開済み' : 'アーカイブ'}
@@ -220,7 +253,7 @@
 		<div class="modal-box bg-white border border-blue-100 shadow-xl">
 			<h3 class="font-bold text-lg mb-4 text-blue-900">新規書籍作成</h3>
 			<form on:submit|preventDefault={createNewBook}>
-				<div class="form-control">
+				<div class="form-control mb-4">
 					<label class="label" for="book-title">
 						<span class="label-text text-blue-700">書籍タイトル</span>
 					</label>
@@ -234,6 +267,20 @@
 						disabled={creating}
 					/>
 				</div>
+				<!-- カテゴリ選択（一時的に無効化）
+				<div class="form-control">
+					<label class="label" for="book-category">
+						<span class="label-text text-blue-700">カテゴリ</span>
+					</label>
+					<select
+						id="book-category"
+						class="select select-bordered border-blue-200 focus:border-blue-400"
+						disabled={creating}
+					>
+						<option value="">カテゴリなし</option>
+					</select>
+				</div>
+				-->
 				<div class="modal-action">
 					<button
 						type="button"

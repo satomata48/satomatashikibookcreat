@@ -50,6 +50,7 @@ export interface Database {
           isbn: string | null
           publisher: string | null
           status: 'draft' | 'published' | 'archived'
+          category_id: string | null
           metadata: Json
           created_at: string
           updated_at: string
@@ -65,6 +66,7 @@ export interface Database {
           isbn?: string | null
           publisher?: string | null
           status?: 'draft' | 'published' | 'archived'
+          category_id?: string | null
           metadata?: Json
           created_at?: string
           updated_at?: string
@@ -80,7 +82,40 @@ export interface Database {
           isbn?: string | null
           publisher?: string | null
           status?: 'draft' | 'published' | 'archived'
+          category_id?: string | null
           metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      categories: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          description: string | null
+          color: string
+          icon: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          description?: string | null
+          color?: string
+          icon?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          description?: string | null
+          color?: string
+          icon?: string
           created_at?: string
           updated_at?: string
         }

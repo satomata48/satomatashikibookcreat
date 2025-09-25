@@ -21,6 +21,7 @@
 - 章ごとの管理
 - リアルタイム自動保存
 - HTMLエディター機能
+- カテゴリ機能（書籍の分類・フィルタリング）
 
 ### 3. 出力システム
 - **EPUB形式**: epub-gen-memoryライブラリ使用
@@ -240,12 +241,26 @@ CREATE TABLE profiles (
     updated_at timestamp with time zone DEFAULT now()
 );
 
+-- categories テーブル
+CREATE TABLE categories (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id uuid REFERENCES auth.users NOT NULL,
+    name text NOT NULL,
+    description text,
+    color varchar(7) DEFAULT '#2196F3',
+    icon text DEFAULT 'book',
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    UNIQUE(user_id, name)
+);
+
 -- books テーブル
 CREATE TABLE books (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     title text NOT NULL,
     author text,
     user_id uuid REFERENCES auth.users NOT NULL,
+    category_id uuid REFERENCES categories(id) ON DELETE SET NULL,
     status text DEFAULT 'draft',
     language text DEFAULT 'ja',
     cover_image_url text,

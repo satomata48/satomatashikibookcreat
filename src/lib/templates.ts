@@ -401,10 +401,11 @@ export const templates: Template[] = [
 		`,
 		cssStyles: `
 			body {
-				font-family: "Noto Serif JP", "Yu Mincho", serif;
+				font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif;
+				font-weight: bold;
 				font-size: 13pt;
 				line-height: 1.8;
-				color: #2c2c2c;
+				color: #3F51B5;
 				width: 210mm;
 				min-height: 297mm;
 				margin: 0 auto;
@@ -418,8 +419,8 @@ export const templates: Template[] = [
 				top: 15mm;
 				right: 25mm;
 				font-size: 12pt;
-				color: #666;
-				font-weight: normal;
+				color: #E91E63;
+				font-weight: bold;
 				text-align: right;
 			}
 
@@ -427,8 +428,8 @@ export const templates: Template[] = [
 				font-size: 20pt;
 				text-align: center;
 				margin: 2em 0;
-				font-weight: normal;
-				color: #1a1a1a;
+				font-weight: bold;
+				color: #3F51B5;
 				page-break-before: always;
 				page-break-after: avoid;
 			}
@@ -441,8 +442,8 @@ export const templates: Template[] = [
 				font-size: 16pt;
 				margin-top: 2em;
 				margin-bottom: 1em;
-				font-weight: normal;
-				color: #333;
+				font-weight: bold;
+				color: #3F51B5;
 				border-bottom: 1px solid #ddd;
 				padding-bottom: 0.5em;
 			}
@@ -451,14 +452,16 @@ export const templates: Template[] = [
 				font-size: 14pt;
 				margin-top: 1.5em;
 				margin-bottom: 1em;
-				font-weight: normal;
-				color: #444;
+				font-weight: bold;
+				color: #3F51B5;
 			}
 
 			p {
 				margin-bottom: 1.2em;
 				text-align: justify;
 				text-indent: 1em;
+				font-weight: bold;
+				color: #3F51B5;
 				orphans: 2;
 				widows: 2;
 			}
@@ -486,17 +489,17 @@ export const templates: Template[] = [
 		}
 	},
 	{
-		id: 'satomata-essay',
-		name: 'さとまた式エッセイ',
-		description: 'さとまた式フォントでページブレーク機能付きエッセイスタイル',
+		id: 'satomata-life-lessons',
+		name: 'さとまた式人生の教え',
+		description: '章タイトル右上表示とH1改ページ機能付きエッセイスタイル',
 		icon: '🌟',
-		features: ['章タイトル右上表示', 'pagebreakタグで改ページ', 'Source Han Sans JP太字', 'A4最適化'],
+		features: ['章タイトル右上表示', 'H1タグで自動改ページ', '上品なフォント', 'A4最適化'],
 		previewStyle: `
 			font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif;
-			font-weight: bold;
-			font-size: 12pt;
-			line-height: 1.6;
-			color: #3F51B5;
+			font-weight: normal;
+			font-size: 13pt;
+			line-height: 1.8;
+			color: #333;
 			max-width: 800px;
 			margin: 0 auto;
 			padding: 2rem;
@@ -505,10 +508,10 @@ export const templates: Template[] = [
 		cssStyles: `
 			body {
 				font-family: "Source Han Sans JP", "Noto Sans JP", sans-serif;
-				font-weight: bold;
-				font-size: 12pt;
-				line-height: 1.6;
-				color: #3F51B5;
+				font-weight: normal;
+				font-size: 13pt;
+				line-height: 1.8;
+				color: #333;
 				width: 210mm;
 				min-height: 297mm;
 				margin: 0 auto;
@@ -522,17 +525,23 @@ export const templates: Template[] = [
 				top: 15mm;
 				right: 25mm;
 				font-size: 12pt;
-				color: #666;
+				color: #E91E63;
 				font-weight: bold;
 				text-align: right;
 			}
 
 			h1 {
-				font-size: 18pt;
+				font-size: 20pt;
 				text-align: center;
 				margin: 2em 0;
 				font-weight: bold;
 				color: #3F51B5;
+				page-break-before: always;
+				page-break-after: avoid;
+			}
+
+			h1:first-child {
+				page-break-before: auto;
 			}
 
 			h2 {
@@ -541,6 +550,8 @@ export const templates: Template[] = [
 				margin-bottom: 1em;
 				font-weight: bold;
 				color: #3F51B5;
+				border-bottom: 1px solid #ddd;
+				padding-bottom: 0.5em;
 			}
 
 			h3 {
@@ -552,46 +563,34 @@ export const templates: Template[] = [
 			}
 
 			p {
-				margin-bottom: 1rem;
+				margin-bottom: 1.2em;
 				text-align: justify;
 				text-indent: 1em;
-				font-weight: bold;
-				color: #3F51B5;
-			}
-
-			/* pagebreakで囲まれた内容は大きく左寄り中央配置 */
-			.pagebreak-content {
-				display: flex;
-				flex-direction: column;
-				justify-content: center;
-				align-items: flex-start;
-				text-align: left;
-				min-height: calc(100% - 60mm);
-				font-size: 44pt;
-				line-height: 2.8;
-				padding: 40mm 20mm;
-				font-weight: bold;
-				color: #3F51B5;
+				font-weight: normal;
+				color: #333;
+				orphans: 2;
+				widows: 2;
 			}
 
 			blockquote {
-				margin: 1rem 0;
-				padding: 1rem;
-				background: #f9f9f9;
-				border-left: 4px solid #3F51B5;
-				font-weight: bold;
-				color: #3F51B5;
+				margin: 1.5em 0;
+				padding: 1em 1.5em;
+				border-left: 3px solid #ccc;
+				background-color: #f9f9f9;
+				font-style: italic;
+				font-weight: normal;
+				color: #333;
 			}
 
 			ul, ol {
-				margin-bottom: 1rem;
-				padding-left: 2rem;
+				margin-bottom: 1.2em;
+				padding-left: 2em;
 			}
 
 			li {
-				margin-bottom: 0.5rem;
-				font-weight: bold;
-				color: #3F51B5;
+				margin-bottom: 0.5em;
+				font-weight: normal;
+				color: #333;
 			}
 		`,
 		pageSetup: {

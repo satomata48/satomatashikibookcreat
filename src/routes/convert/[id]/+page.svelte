@@ -265,6 +265,10 @@
 								<h1 style="font-family: 'Noto Serif JP', 'Yu Mincho', serif; font-size: 20pt; text-align: center; margin: 2em 0; font-weight: normal; color: #1a1a1a;">
 									{book.title}
 								</h1>
+							{:else if selectedTemplate === 'satomata-life-lessons'}
+								<h1 style="font-family: 'Noto Serif JP', 'Yu Mincho', serif; font-size: 20pt; text-align: center; margin: 2em 0; font-weight: normal; color: #1a1a1a;">
+									{book.title}
+								</h1>
 							{:else}
 								<h1 style="font-size: 20pt; margin-bottom: 1em; font-weight: bold;">
 									{book.title}
@@ -278,6 +282,10 @@
 										{authorName}
 									</p>
 								{:else if selectedTemplate === 'essay'}
+									<p style="font-family: 'Noto Serif JP', 'Yu Mincho', serif; text-align: center; margin-bottom: 2em; opacity: 0.8; font-style: italic;">
+										{authorName}
+									</p>
+								{:else if selectedTemplate === 'satomata-life-lessons'}
 									<p style="font-family: 'Noto Serif JP', 'Yu Mincho', serif; text-align: center; margin-bottom: 2em; opacity: 0.8; font-style: italic;">
 										{authorName}
 									</p>
@@ -312,6 +320,12 @@
 											{chapters[0].title}
 										</div>
 									</div>
+								{:else if selectedTemplate === 'satomata-life-lessons'}
+									<div style="position: relative;">
+										<div style="position: absolute; top: -2em; right: 0; font-family: 'Noto Serif JP', 'Yu Mincho', serif; font-size: 12pt; color: #666; text-align: right;">
+											{chapters[0].title}
+										</div>
+									</div>
 								{:else}
 									<h2 style="font-size: 16pt; margin-top: 1.5em; font-weight: bold;">
 										第1章: {chapters[0].title}
@@ -339,6 +353,13 @@
 											{/if}
 										</div>
 									{:else if selectedTemplate === 'essay'}
+										<div style="font-family: 'Noto Serif JP', 'Yu Mincho', serif; text-align: justify; text-indent: 1em; line-height: 1.8; color: #2c2c2c;">
+											{@html sanitizeHtml(chapters[0].content?.substring(0, 300) || '')}
+											{#if chapters[0].content && chapters[0].content.length > 300}
+												<span style="opacity: 0.6;">...</span>
+											{/if}
+										</div>
+									{:else if selectedTemplate === 'satomata-life-lessons'}
 										<div style="font-family: 'Noto Serif JP', 'Yu Mincho', serif; text-align: justify; text-indent: 1em; line-height: 1.8; color: #2c2c2c;">
 											{@html sanitizeHtml(chapters[0].content?.substring(0, 300) || '')}
 											{#if chapters[0].content && chapters[0].content.length > 300}
