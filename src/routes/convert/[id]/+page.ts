@@ -28,7 +28,7 @@ export const load: PageLoad = async ({ params, parent }) => {
 			.from('chapters')
 			.select('*')
 			.eq('book_id', bookId)
-			.order('order_index', { ascending: true });
+			.order('order_number', { ascending: true });
 		
 		if (chaptersError) {
 			console.error('Error fetching chapters:', chaptersError);
