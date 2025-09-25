@@ -13,7 +13,7 @@
 	let isCreatingChapter = false;
 	let isSaving = false;
 	let saveStatus = '';
-	let isPreviewMode = false;
+	// 2カラムレイアウトに変更したため、isPreviewModeは不要
 	let pageLayout = 'none'; // 'none' または 'a4'
 	let selectedTemplate = 'simple'; // テンプレート選択
 	let showBookSettings = false;
@@ -103,12 +103,11 @@
 	// HTMLを安全にサニタイズする関数（改行を保持）
 	$: safeHtml = sanitizeWithLineBreaks(chapterContent || '');
 	
-	// デバッグ用: プレビューの状態をログ出力
-	$: if (typeof window !== 'undefined') {
-		console.log('Chapter content:', chapterContent?.substring(0, 100));
-		console.log('Safe HTML:', safeHtml?.substring(0, 100));
-		console.log('Preview mode:', isPreviewMode);
-	}
+	// デバッグ用: プレビューの状態をログ出力（2カラムレイアウトでは不要）
+	// $: if (typeof window !== 'undefined') {
+	//	console.log('Chapter content:', chapterContent?.substring(0, 100));
+	//	console.log('Safe HTML:', safeHtml?.substring(0, 100));
+	// }
 	
 	$: bookId = $page.params.id;
 	$: chapters = data.chapters;
@@ -580,26 +579,12 @@
 								<span class="label-text-alt">{chapterContent.length}文字</span>
 							</label>
 							<div class="flex space-x-2">
-								<button 
-									class="btn btn-sm {isPreviewMode ? 'btn-ghost' : 'btn-primary'}"
-									on:click={() => isPreviewMode = false}
-									type="button"
-								>
-									編集
-								</button>
-								<button 
-									class="btn btn-sm {isPreviewMode ? 'btn-primary' : 'btn-ghost'}"
-									on:click={() => isPreviewMode = true}
-									type="button"
-								>
-									プレビュー
-								</button>
+								<span class="text-sm font-medium text-base-content/70">📝 編集 & 👁️ プレビュー (リアルタイム)</span>
 							</div>
 						</div>
 
 						<!-- HTMLフォーマットツールバー -->
-						{#if !isPreviewMode}
-							<div class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg mb-3 flex-shrink-0">
+						<div class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg mb-3 flex-shrink-0">
 								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('bold')} type="button">
 									<strong>B</strong>
 								</button>
@@ -640,11 +625,28 @@
 									📄 改ページ
 								</button>
 							</div>
-						{/if}
 
-						<!-- エディター/プレビュー表示 -->
-						{#if isPreviewMode}
-							<div class="flex-1 overflow-auto {pageLayout === 'a4' ? 'preview-container a4-layout' : 'preview-container'}">
+						<!-- エディター/プレビュー表示（2カラムレイアウト） -->
+						<div class="flex-1 flex flex-col lg:flex-row gap-4 min-h-0" style="height: calc(100vh - 300px);">
+							<!-- 左カラム：エディター -->
+							<div class="flex-1 flex flex-col">
+								<div class="mb-2">
+									<span class="text-sm font-medium text-blue-700">📝 編集エリア</span>
+								</div>
+								<textarea
+									bind:value={chapterContent}
+									placeholder="章の内容を入力してください..."
+									class="textarea textarea-bordered flex-1 resize-none font-mono text-sm leading-relaxed w-full h-full"
+									style="min-height: 500px; height: 100%;"
+								></textarea>
+							</div>
+
+							<!-- 右カラム：プレビュー -->
+							<div class="flex-1 flex flex-col">
+								<div class="mb-2">
+									<span class="text-sm font-medium text-green-700">👁️ プレビュー</span>
+								</div>
+							<div class="flex-1 overflow-auto {pageLayout === 'a4' ? 'preview-container a4-layout' : 'preview-container'}" style="min-height: 500px; height: 100%; border: 1px solid #e5e7eb; border-radius: 0.5rem; background: white; padding: 1rem; width: 100%;">
 								{#if pageLayout === 'a4'}
 									<!-- A4レイアウトでテンプレートスタイル適用 - 完成レビュー表示 -->
 									<div class="a4-page-container">
@@ -1180,14 +1182,8 @@
 									</div>
 								{/if}
 							</div>
-						{:else}
-							<textarea
-								bind:value={chapterContent}
-								placeholder="章の内容を入力... HTMLタグを使用できます。例: <strong>太字</strong>, <em>斜体</em>, <h1>見出し</h1>"
-								class="textarea textarea-bordered flex-1 w-full resize-none leading-relaxed font-mono"
-								style="min-height: 500px; font-size: 14px; line-height: 1.6; height: 100%;"
-							></textarea>
-						{/if}
+							</div>
+						</div>
 					</div>
 					
 					<!-- ツールバー -->
