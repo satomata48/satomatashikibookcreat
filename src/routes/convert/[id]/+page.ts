@@ -23,12 +23,12 @@ export const load: PageLoad = async ({ params, parent }) => {
 			throw redirect(303, '/dashboard');
 		}
 		
-		// 章情報を取得（順序付き）
+		// 章情報を取得（順序付き）- editorページと同じカラム名を使用
 		const { data: chapters, error: chaptersError } = await supabase
 			.from('chapters')
 			.select('*')
 			.eq('book_id', bookId)
-			.order('order_number', { ascending: true });
+			.order('order_index', { ascending: true });
 		
 		if (chaptersError) {
 			console.error('Error fetching chapters:', chaptersError);

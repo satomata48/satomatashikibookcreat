@@ -1095,6 +1095,13 @@
 													margin-bottom: 2em !important;
 													font-weight: bold !important;
 												}
+												/* pagebreakコンテンツを確実に太字に */
+												.a4-page .page-content.pagebreak-content,
+												.a4-page .page-content.pagebreak-content *,
+												.a4-page .page-content.pagebreak-content p,
+												.a4-page .page-content.pagebreak-content div {
+													font-weight: bold !important;
+												}
 												/* 通常の内容は標準レイアウト */
 												.page-content:not(.pagebreak-content) {
 													padding: 15mm 10mm 10mm 10mm !important;
@@ -1157,13 +1164,27 @@
 													line-height: 1.8 !important;
 												}
 												.a4-page h1 {
-													font-size: 20pt !important;
-													text-align: center !important;
+													font-size: 30pt !important;
+													text-align: left !important;
 													margin: 2em 0 !important;
 													font-weight: bold !important;
 													color: #3F51B5 !important;
 													page-break-before: always !important;
 													page-break-after: avoid !important;
+												}
+												/* h1タグのサイズを確実に適用 */
+												.a4-page[data-template="satomata-life-lessons"] h1 {
+													font-size: 30pt !important;
+													text-align: left !important;
+													line-height: 1.2 !important;
+												}
+												.a4-page .page-content h1,
+												.a4-page .page-content:not(.pagebreak-content) h1 {
+													font-size: 30pt !important;
+													text-align: left !important;
+													font-weight: bold !important;
+													color: #3F51B5 !important;
+													margin: 2em 0 !important;
 												}
 												.a4-page h1:first-child {
 													page-break-before: auto !important;
@@ -1237,6 +1258,13 @@
 													line-height: inherit !important;
 													text-align: left !important;
 													margin-bottom: 2em !important;
+													font-weight: bold !important;
+												}
+												/* pagebreakコンテンツを確実に太字に */
+												.a4-page .page-content.pagebreak-content,
+												.a4-page .page-content.pagebreak-content *,
+												.a4-page .page-content.pagebreak-content p,
+												.a4-page .page-content.pagebreak-content div {
 													font-weight: bold !important;
 												}
 												/* 通常の内容は標準レイアウト */
