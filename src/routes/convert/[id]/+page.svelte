@@ -266,7 +266,7 @@
 									{book.title}
 								</h1>
 							{:else if selectedTemplate === 'satomata-life-lessons'}
-								<h1 style="font-family: 'Noto Serif JP', 'Yu Mincho', serif; font-size: 20pt; text-align: center; margin: 2em 0; font-weight: normal; color: #1a1a1a;">
+								<h1 style="font-family: 'Source Han Sans JP', 'Noto Sans JP', sans-serif; font-size: 18pt; font-weight: bold; color: #3F51B5; margin-bottom: 2rem;">
 									{book.title}
 								</h1>
 							{:else}
@@ -286,7 +286,7 @@
 										{authorName}
 									</p>
 								{:else if selectedTemplate === 'satomata-life-lessons'}
-									<p style="font-family: 'Noto Serif JP', 'Yu Mincho', serif; text-align: center; margin-bottom: 2em; opacity: 0.8; font-style: italic;">
+									<p style="font-family: 'Source Han Sans JP', 'Noto Sans JP', sans-serif; font-weight: normal; color: #333; text-align: left; margin-bottom: 2rem;">
 										{authorName}
 									</p>
 								{:else}
@@ -360,10 +360,10 @@
 											{/if}
 										</div>
 									{:else if selectedTemplate === 'satomata-life-lessons'}
-										<div style="font-family: 'Noto Serif JP', 'Yu Mincho', serif; text-align: justify; text-indent: 1em; line-height: 1.8; color: #2c2c2c;">
+										<div style="font-family: 'Source Han Sans JP', 'Noto Sans JP', sans-serif; font-weight: normal; color: #333; text-align: left; text-indent: 1em; line-height: 1.8;">
 											{@html sanitizeHtml(chapters[0].content?.substring(0, 300) || '')}
 											{#if chapters[0].content && chapters[0].content.length > 300}
-												<span style="opacity: 0.6;">...</span>
+												<span style="opacity: 0.6; color: #333;">...</span>
 											{/if}
 										</div>
 									{:else}

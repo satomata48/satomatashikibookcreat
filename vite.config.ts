@@ -5,5 +5,8 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	optimizeDeps: {
 		exclude: ['epub-gen-memory']
+	},
+	define: {
+		global: 'globalThis'
 	}
 });

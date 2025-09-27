@@ -4,6 +4,8 @@
 	import type { PageData } from './$types';
 	import DOMPurify from 'dompurify';
 	import { templates, getTemplate, getTemplatePreviewStyle } from '$lib/templates';
+	import { onMount } from 'svelte';
+	import * as monaco from 'monaco-editor';
 	
 	export let data: PageData;
 	
@@ -195,11 +197,16 @@
 		chapterTitle = chapter.title;
 		chapterContent = chapter.content || '';
 		isCreatingChapter = false;
-		
+
+		// Monaco Editorの内容を更新
+		if (monacoEditor) {
+			monacoEditor.setValue(chapterContent);
+		}
+
 		// 自動保存用の追跡変数を更新
 		lastTitle = chapterTitle;
 		lastContent = chapterContent;
-		
+
 		// 既存の自動保存タイマーをクリア
 		clearTimeout(saveTimeout);
 	}
@@ -207,27 +214,28 @@
 	function createNewChapter() {
 		// 自動保存のタイマーをクリア
 		clearTimeout(saveTimeout);
-		
+
 		selectedChapter = null;
 		chapterTitle = '';
 		chapterContent = '';
 		isCreatingChapter = true;
-		
+
+		// Monaco Editorの内容をクリア
+		if (monacoEditor) {
+			monacoEditor.setValue('');
+		}
+
 		// 自動保存用の追跡変数を更新
 		lastTitle = '';
 		lastContent = '';
-		
-		// 新規章作成モードに移行
 	}
 
-	// HTMLフォーマット関数
+	// HTMLフォーマット関数（Monaco Editor対応）
 	function insertHtmlTag(tag: string, color?: string) {
-		const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-		if (!textarea) return;
+		if (!monacoEditor) return;
 
-		const start = textarea.selectionStart;
-		const end = textarea.selectionEnd;
-		const selectedText = chapterContent.substring(start, end);
+		const selection = monacoEditor.getSelection();
+		const selectedText = selection ? monacoEditor.getModel()?.getValueInRange(selection) || '' : '';
 
 		let insertText = '';
 		switch(tag) {
@@ -291,13 +299,25 @@
 				break;
 		}
 
-		chapterContent = chapterContent.substring(0, start) + insertText + chapterContent.substring(end);
+		// Monaco Editorに挿入
+		if (selection) {
+			monacoEditor.executeEdits('insert-html-tag', [{
+				range: selection,
+				text: insertText
+			}]);
+		} else {
+			// 選択がない場合は現在のカーソル位置に挿入
+			const position = monacoEditor.getPosition();
+			if (position) {
+				monacoEditor.executeEdits('insert-html-tag', [{
+					range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+					text: insertText
+				}]);
+			}
+		}
 
-		// カーソル位置を調整
-		setTimeout(() => {
-			textarea.focus();
-			textarea.setSelectionRange(start + insertText.length, start + insertText.length);
-		}, 0);
+		// フォーカスを戻す
+		monacoEditor.focus();
 	}
 
 	// カラーピッカー関数
@@ -324,6 +344,105 @@
 		const type = isBg ? 'bgcolor' : 'textcolor';
 		insertHtmlTag(type, color);
 	}
+
+
+	// HTMLタグ検出機能
+	function detectHtmlTags(content: string): { tag: string, count: number, color: string }[] {
+		if (!content) return [];
+
+		const tagPatterns = [
+			{ pattern: /<h1[^>]*>[\s\S]*?<\/h1>/gi, name: 'H1見出し', color: 'text-red-600' },
+			{ pattern: /<h2[^>]*>[\s\S]*?<\/h2>/gi, name: 'H2見出し', color: 'text-red-600' },
+			{ pattern: /<h3[^>]*>[\s\S]*?<\/h3>/gi, name: 'H3見出し', color: 'text-red-600' },
+			{ pattern: /<strong[^>]*>[\s\S]*?<\/strong>/gi, name: '太字', color: 'text-red-600' },
+			{ pattern: /<em[^>]*>[\s\S]*?<\/em>/gi, name: '斜体', color: 'text-red-600' },
+			{ pattern: /<pagebreak[^>]*>[\s\S]*?<\/pagebreak>/gi, name: '改ページ', color: 'text-blue-600' },
+			{ pattern: /<br\s*\/?>/gi, name: '改行', color: 'text-blue-600' },
+			{ pattern: /<hr\s*\/?>/gi, name: '区切り線', color: 'text-blue-600' },
+			{ pattern: /<span\s+style="color:[^"]*"[^>]*>[\s\S]*?<\/span>/gi, name: '文字色', color: 'text-purple-600' },
+			{ pattern: /<span\s+style="background-color:[^"]*"[^>]*>[\s\S]*?<\/span>/gi, name: 'ハイライト', color: 'text-yellow-600' }
+		];
+
+		const detectedTags = tagPatterns.map(({ pattern, name, color }) => {
+			const matches = content.match(pattern) || [];
+			return { tag: name, count: matches.length, color };
+		}).filter(item => item.count > 0);
+
+		return detectedTags;
+	}
+
+	// 検出されたHTMLタグのリアクティブ変数
+	$: detectedTags = detectHtmlTags(chapterContent || '');
+
+	// Monaco Editor関連
+	let editorContainer: HTMLDivElement;
+	let monacoEditor: monaco.editor.IStandaloneCodeEditor;
+
+	// Monaco Editor初期化
+	onMount(async () => {
+		if (editorContainer) {
+			// Web Worker無効化（シンプルな解決策）
+			self.MonacoEnvironment = {
+				getWorker: function () {
+					return null;
+				}
+			};
+
+			// カスタムHTMLテーマ定義
+			monaco.editor.defineTheme('html-custom', {
+				base: 'vs',
+				inherit: true,
+				rules: [
+					// HTMLタグ全般
+					{ token: 'tag', foreground: 'ea580c' },
+					{ token: 'tag.id.html', foreground: 'ea580c' },
+					{ token: 'tag.class.html', foreground: 'ea580c' },
+					{ token: 'attribute.name.html', foreground: '059669' },
+					{ token: 'attribute.value.html', foreground: '0EA5E9' },
+					{ token: 'string.html', foreground: '0EA5E9' },
+					// テキスト
+					{ token: '', foreground: '374151' }
+				],
+				colors: {
+					'editor.background': '#ffffff'
+				}
+			});
+
+			// Monaco Editor作成
+			monacoEditor = monaco.editor.create(editorContainer, {
+				value: chapterContent || '',
+				language: 'html',
+				theme: 'html-custom',
+				fontSize: 14,
+				fontFamily: 'JetBrains Mono, Fira Code, Monaco, Cascadia Code, Roboto Mono, monospace',
+				lineNumbers: 'on',
+				minimap: { enabled: false },
+				wordWrap: 'on',
+				automaticLayout: true,
+				scrollBeyondLastLine: false,
+				renderWhitespace: 'selection',
+				suggestOnTriggerCharacters: false,
+				acceptSuggestionOnEnter: 'off',
+				tabCompletion: 'off',
+				wordBasedSuggestions: 'off',
+				parameterHints: { enabled: false },
+				quickSuggestions: false
+			});
+
+			// 内容変更時のハンドラー
+			monacoEditor.onDidChangeModelContent(() => {
+				chapterContent = monacoEditor.getValue();
+			});
+		}
+
+		return () => {
+			if (monacoEditor) {
+				monacoEditor.dispose();
+			}
+		};
+	});
+
+
 	
 	async function saveChapter() {
 		if (!chapterTitle.trim()) {
@@ -675,8 +794,31 @@
 								<span class="label-text">内容</span>
 								<span class="label-text-alt">{chapterContent.length}文字</span>
 							</label>
-							<div class="flex space-x-2">
+							<div class="flex items-center space-x-3">
 								<span class="text-sm font-medium text-base-content/70">📝 編集 & 👁️ プレビュー (リアルタイム)</span>
+
+								<!-- 保存状態表示 -->
+								{#if saveStatus}
+									<span class="text-xs font-medium {saveStatus.includes('失敗') ? 'text-error' : 'text-success'}">
+										{saveStatus}
+									</span>
+								{/if}
+
+								<!-- 保存ボタン -->
+								<button
+									on:click={() => {
+										clearTimeout(saveTimeout);
+										saveChapter();
+									}}
+									class="btn btn-primary btn-sm"
+									disabled={isSaving}
+									type="button"
+								>
+									{#if isSaving}
+										<span class="loading loading-spinner loading-sm"></span>
+									{/if}
+									💾 保存
+								</button>
 							</div>
 						</div>
 
@@ -783,13 +925,38 @@
 							<div class="flex-1 flex flex-col">
 								<div class="mb-2">
 									<span class="text-sm font-medium text-blue-700">📝 編集エリア</span>
+									<span class="text-xs text-gray-500 ml-2">ヒント: HTMLタグが挿入されています</span>
 								</div>
-								<textarea
-									bind:value={chapterContent}
-									placeholder="章の内容を入力してください..."
-									class="textarea textarea-bordered flex-1 resize-none font-mono text-sm leading-relaxed w-full h-full"
-									style="min-height: 500px; height: 100%;"
-								></textarea>
+								<!-- Monaco Editor Container -->
+								<div
+									bind:this={editorContainer}
+									class="monaco-editor-container"
+									style="
+										min-height: 450px;
+										height: calc(100% - 50px);
+										border: 1px solid #d1d5db;
+										border-radius: 6px;
+										overflow: hidden;
+									"
+								></div>
+
+								<!-- HTMLタグ検出インジケーター -->
+								{#if detectedTags.length > 0}
+									<div class="mt-2 p-2 bg-gray-50 rounded-md border">
+										<div class="text-xs text-gray-600 mb-1">🏷️ 検出されたHTMLタグ:</div>
+										<div class="flex flex-wrap gap-2">
+											{#each detectedTags as tagInfo}
+												<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white border {tagInfo.color}">
+													{tagInfo.tag} ({tagInfo.count})
+												</span>
+											{/each}
+										</div>
+									</div>
+								{:else}
+									<div class="mt-2 p-2 bg-blue-50 rounded-md border border-blue-200">
+										<div class="text-xs text-blue-600">💡 ツールバーのボタンでHTMLタグを挿入できます</div>
+									</div>
+								{/if}
 							</div>
 
 							<!-- 右カラム：プレビュー -->
@@ -1339,23 +1506,10 @@
 						</div>
 					</div>
 					
-					<!-- ツールバー -->
-					<div class="mt-4 flex justify-between items-center flex-shrink-0">
+					<!-- 自動保存ステータス -->
+					<div class="mt-4 flex justify-center">
 						<div class="text-sm text-gray-500">
 							文字数: {chapterContent.length} | 自動保存: 3秒後
-						</div>
-						<div class="space-x-2">
-							<button 
-								on:click={() => {
-									clearTimeout(saveTimeout);
-									saveChapter();
-								}} 
-								class="btn btn-primary" 
-								disabled={isSaving}
-								type="button"
-							>
-								手動保存
-							</button>
 						</div>
 					</div>
 				</div>
@@ -1404,6 +1558,59 @@
 	.textarea {
 		font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
 		line-height: 1.8;
+	}
+
+	/* HTMLエディターのスタイル */
+	.html-editor {
+		font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+		background-color: #ffffff;
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		padding: 12px;
+		transition: border-color 0.2s ease;
+		color: #374151;
+		line-height: 1.7;
+		font-size: 14px;
+		font-weight: 400;
+	}
+
+	.html-editor:focus {
+		border-color: #3b82f6;
+		background-color: #ffffff;
+		color: #1f2937;
+		outline: none;
+	}
+
+	.html-editor::placeholder {
+		color: #64748b;
+		font-style: italic;
+		font-weight: 400;
+	}
+
+	/* 選択時のハイライト色 */
+	.html-editor::selection {
+		background-color: #dbeafe;
+		color: #1e40af;
+	}
+
+	/* エディターコンテナ */
+	.editor-container {
+		position: relative;
+	}
+
+	/* シンタックスハイライト用スタイル */
+	.syntax-highlight-background {
+		line-height: 1.7;
+	}
+
+	.editor-container textarea {
+		caret-color: #1f2937;
+		selection-color: #dbeafe;
+	}
+
+	.editor-container textarea::selection {
+		background-color: #dbeafe;
+		color: #1e40af;
 	}
 
 	/* プレビュー内の改行とスペーシングを適切に表示 */
