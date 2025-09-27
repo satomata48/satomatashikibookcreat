@@ -17,6 +17,64 @@
 	let pageLayout = 'none'; // 'none' または 'a4'
 	let selectedTemplate = 'simple'; // テンプレート選択
 	let showBookSettings = false;
+
+	// テンプレート別クイックカラーパレット
+	const templateColors = {
+		'satomata': [
+			{ name: 'サトマタブルー', color: '#3F51B5', bg: false },
+			{ name: 'ライトブルー', color: '#2196F3', bg: false },
+			{ name: 'デープブルー', color: '#1976D2', bg: false },
+			{ name: 'ブルーハイライト', color: '#E3F2FD', bg: true },
+			{ name: 'ライトハイライト', color: '#BBDEFB', bg: true }
+		],
+		'satomata-life-lessons': [
+			{ name: 'サトマタブルー', color: '#3F51B5', bg: false },
+			{ name: 'サトマタピンク', color: '#E91E63', bg: false },
+			{ name: 'ディープピンク', color: '#C2185B', bg: false },
+			{ name: 'ライトピンク', color: '#F8BBD9', bg: true },
+			{ name: 'ブルーハイライト', color: '#E3F2FD', bg: true },
+			{ name: 'ピンクハイライト', color: '#FCE4EC', bg: true }
+		],
+		'essay': [
+			{ name: 'エレガントブラック', color: '#2c2c2c', bg: false },
+			{ name: 'ディープブラウン', color: '#7c2d12', bg: false },
+			{ name: 'ゴールド', color: '#B8860B', bg: false },
+			{ name: 'クリームハイライト', color: '#FFF8DC', bg: true },
+			{ name: 'ライトグレー', color: '#F5F5F5', bg: true }
+		],
+		'simple': [
+			{ name: 'ブラック', color: '#000000', bg: false },
+			{ name: 'グレー', color: '#666666', bg: false },
+			{ name: 'レッド', color: '#DC2626', bg: false },
+			{ name: 'ブルー', color: '#2563EB', bg: false },
+			{ name: 'イエローハイライト', color: '#FEF3C7', bg: true },
+			{ name: 'グリーンハイライト', color: '#D1FAE5', bg: true }
+		],
+		'modern': [
+			{ name: 'モダンブルー', color: '#2563EB', bg: false },
+			{ name: 'テックグレー', color: '#374151', bg: false },
+			{ name: 'アクセントパープル', color: '#7C3AED', bg: false },
+			{ name: 'ブルーハイライト', color: '#DBEAFE', bg: true },
+			{ name: 'パープルハイライト', color: '#E9D5FF', bg: true }
+		],
+		'classic': [
+			{ name: 'クラシックブラウン', color: '#7c2d12', bg: false },
+			{ name: 'ディープレッド', color: '#B91C1C', bg: false },
+			{ name: 'フォレストグリーン', color: '#059669', bg: false },
+			{ name: 'ベージュハイライト', color: '#FEF7ED', bg: true },
+			{ name: 'グリーンハイライト', color: '#ECFDF5', bg: true }
+		],
+		'minimal': [
+			{ name: 'ミニマルグレー', color: '#374151', bg: false },
+			{ name: 'アクセントブルー', color: '#0EA5E9', bg: false },
+			{ name: 'ソフトブラック', color: '#1F2937', bg: false },
+			{ name: 'ライトグレーハイライト', color: '#F9FAFB', bg: true },
+			{ name: 'ブルーハイライト', color: '#E0F2FE', bg: true }
+		]
+	};
+
+	// 現在のテンプレートのカラーパレットを取得
+	$: currentColors = templateColors[selectedTemplate] || templateColors['simple'];
 	
 	// 改行を保持してHTMLをサニタイズする関数
 	function sanitizeWithLineBreaks(content: string): string {
@@ -163,14 +221,14 @@
 	}
 
 	// HTMLフォーマット関数
-	function insertHtmlTag(tag: string) {
+	function insertHtmlTag(tag: string, color?: string) {
 		const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
 		if (!textarea) return;
 
 		const start = textarea.selectionStart;
 		const end = textarea.selectionEnd;
 		const selectedText = chapterContent.substring(start, end);
-		
+
 		let insertText = '';
 		switch(tag) {
 			case 'bold':
@@ -217,15 +275,54 @@
 			case 'pagebreak':
 				insertText = '<pagebreak>\n  改ページ\n</pagebreak>';
 				break;
+			case 'textcolor':
+				if (color) {
+					insertText = `<span style="color: ${color};">${selectedText || 'カラーテキスト'}</span>`;
+				} else {
+					return;
+				}
+				break;
+			case 'bgcolor':
+				if (color) {
+					insertText = `<span style="background-color: ${color};">${selectedText || 'ハイライト'}</span>`;
+				} else {
+					return;
+				}
+				break;
 		}
 
 		chapterContent = chapterContent.substring(0, start) + insertText + chapterContent.substring(end);
-		
+
 		// カーソル位置を調整
 		setTimeout(() => {
 			textarea.focus();
 			textarea.setSelectionRange(start + insertText.length, start + insertText.length);
 		}, 0);
+	}
+
+	// カラーピッカー関数
+	function openColorPicker(type: 'textcolor' | 'bgcolor') {
+		const colorInput = document.createElement('input');
+		colorInput.type = 'color';
+		colorInput.style.opacity = '0';
+		colorInput.style.position = 'absolute';
+		colorInput.style.top = '-1000px';
+		document.body.appendChild(colorInput);
+
+		colorInput.addEventListener('change', (e) => {
+			const target = e.target as HTMLInputElement;
+			const color = target.value;
+			insertHtmlTag(type, color);
+			document.body.removeChild(colorInput);
+		});
+
+		colorInput.click();
+	}
+
+	// クイックカラー適用関数
+	function applyQuickColor(color: string, isBg: boolean) {
+		const type = isBg ? 'bgcolor' : 'textcolor';
+		insertHtmlTag(type, color);
 	}
 	
 	async function saveChapter() {
@@ -503,7 +600,7 @@
 					class="btn btn-secondary btn-sm"
 					type="button"
 				>
-					📖 EPUB変換
+					📖 出力する
 				</button>
 			</div>
 		</div>
@@ -585,45 +682,99 @@
 
 						<!-- HTMLフォーマットツールバー -->
 						<div class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg mb-3 flex-shrink-0">
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('bold')} type="button">
-									<strong>B</strong>
-								</button>
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('italic')} type="button">
-									<em>I</em>
-								</button>
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('h1')} type="button">
-									H1
-								</button>
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('h2')} type="button">
-									H2
-								</button>
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('h3')} type="button">
-									H3
-								</button>
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('p')} type="button">
-									段落
-								</button>
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('br')} type="button">
-									改行
-								</button>
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('hr')} type="button">
-									区切り線
-								</button>
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('ul')} type="button">
-									・リスト
-								</button>
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('ol')} type="button">
-									1.リスト
-								</button>
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('link')} type="button">
-									🔗リンク
-								</button>
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('blockquote')} type="button">
-									" 引用
-								</button>
-								<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('pagebreak')} type="button">
-									📄 改ページ
-								</button>
+								<!-- テキストフォーマット -->
+								<div class="flex flex-wrap gap-2 border-r border-gray-300 pr-2">
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('bold')} type="button">
+										<strong>B</strong>
+									</button>
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('italic')} type="button">
+										<em>I</em>
+									</button>
+								</div>
+
+								<!-- カラー設定 -->
+								<div class="flex flex-wrap gap-2 border-r border-gray-300 pr-2">
+									<!-- カラーピッカー -->
+									<button
+										class="btn btn-xs btn-outline hover:bg-red-100"
+										on:click={() => openColorPicker('textcolor')}
+										type="button"
+										title="文字色を設定"
+									>
+										🎨 文字色
+									</button>
+									<button
+										class="btn btn-xs btn-outline hover:bg-yellow-100"
+										on:click={() => openColorPicker('bgcolor')}
+										type="button"
+										title="背景色を設定（ハイライト）"
+									>
+										🖍️ ハイライト
+									</button>
+
+									<!-- テンプレート別クイックカラーパレット -->
+									<div class="flex gap-1 items-center ml-2">
+										<span class="text-xs text-gray-600">クイック:</span>
+										{#each currentColors as colorItem}
+											<button
+												class="w-6 h-6 rounded border-2 border-gray-300 hover:border-gray-500 transition-colors cursor-pointer shadow-sm"
+												style="background-color: {colorItem.color}"
+												on:click={() => applyQuickColor(colorItem.color, colorItem.bg)}
+												type="button"
+												title="{colorItem.name} - {colorItem.bg ? 'ハイライト' : '文字色'}"
+											></button>
+										{/each}
+									</div>
+								</div>
+
+								<!-- 見出し -->
+								<div class="flex flex-wrap gap-2 border-r border-gray-300 pr-2">
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('h1')} type="button">
+										H1
+									</button>
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('h2')} type="button">
+										H2
+									</button>
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('h3')} type="button">
+										H3
+									</button>
+								</div>
+
+								<!-- 段落・区切り -->
+								<div class="flex flex-wrap gap-2 border-r border-gray-300 pr-2">
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('p')} type="button">
+										段落
+									</button>
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('br')} type="button">
+										改行
+									</button>
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('hr')} type="button">
+										区切り線
+									</button>
+								</div>
+
+								<!-- リスト・引用 -->
+								<div class="flex flex-wrap gap-2 border-r border-gray-300 pr-2">
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('ul')} type="button">
+										・リスト
+									</button>
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('ol')} type="button">
+										1.リスト
+									</button>
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('blockquote')} type="button">
+										" 引用
+									</button>
+								</div>
+
+								<!-- リンク・ページブレーク -->
+								<div class="flex flex-wrap gap-2">
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('link')} type="button">
+										🔗リンク
+									</button>
+									<button class="btn btn-xs btn-outline" on:click={() => insertHtmlTag('pagebreak')} type="button">
+										📄 改ページ
+									</button>
+								</div>
 							</div>
 
 						<!-- エディター/プレビュー表示（2カラムレイアウト） -->
@@ -775,6 +926,7 @@
 													line-height: inherit !important;
 													text-align: left !important;
 													margin-bottom: 2em !important;
+													font-weight: bold !important;
 												}
 												/* 通常の内容は標準レイアウト */
 												.page-content:not(.pagebreak-content) {
@@ -918,6 +1070,7 @@
 													line-height: inherit !important;
 													text-align: left !important;
 													margin-bottom: 2em !important;
+													font-weight: bold !important;
 												}
 												/* 通常の内容は標準レイアウト */
 												.page-content:not(.pagebreak-content) {
