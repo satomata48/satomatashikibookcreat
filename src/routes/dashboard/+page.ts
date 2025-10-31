@@ -15,7 +15,7 @@ export const load: PageLoad = async ({ parent }) => {
 			.select('id')
 			.eq('id', session.user.id)
 			.single();
-		
+
 		if (!profile) {
 			await supabase.from('profiles').insert({
 				id: session.user.id,
@@ -23,28 +23,55 @@ export const load: PageLoad = async ({ parent }) => {
 				avatar_url: session.user.user_metadata?.avatar_url || null,
 			});
 		}
-		
-		const { data: books, error } = await supabase
+
+		// 書籍データ取得
+		const { data: books, error: booksError } = await supabase
 			.from('books')
 			.select('*')
 			.eq('user_id', session.user.id)
 			.order('updated_at', { ascending: false });
-		
-		if (error) {
-			console.error('Error fetching books:', error);
+
+		if (booksError) {
+			console.error('Error fetching books:', booksError);
 		}
-		
+
+		// プレゼンテーションデータ取得
+		const { data: presentations, error: presentationsError } = await supabase
+			.from('presentations')
+			.select('*')
+			.eq('user_id', session.user.id)
+			.order('updated_at', { ascending: false });
+
+		if (presentationsError) {
+			console.error('Error fetching presentations:', presentationsError);
+		}
+
+		// ユーザー設定取得
+		const { data: userSettings, error: settingsError } = await supabase
+			.from('user_settings')
+			.select('*')
+			.eq('user_id', session.user.id)
+			.single();
+
+		if (settingsError && settingsError.code !== 'PGRST116') {
+			console.error('Error fetching user settings:', settingsError);
+		}
+
 		return {
 			session,
 			supabase,
-			books: books || []
+			books: books || [],
+			presentations: presentations || [],
+			userSettings: userSettings || null
 		};
 	} catch (err) {
 		console.error('Dashboard load error:', err);
 		return {
 			session,
 			supabase,
-			books: []
+			books: [],
+			presentations: [],
+			userSettings: null
 		};
 	}
 };

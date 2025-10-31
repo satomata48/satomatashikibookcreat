@@ -13,6 +13,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.2",
     "@sveltejs/adapter-vercel": "^5.10.2",
